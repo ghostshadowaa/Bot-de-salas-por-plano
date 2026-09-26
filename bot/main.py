@@ -10,8 +10,8 @@ from .nix_api import NixAPI, NixAPIError
 from .tasks import start_background
 
 MODES = {
-    "c1": "ap_padrao", "c2": "gelo_inf", "c3": "tatico",
-    "c4": "ap_fullcapa", "c5": "capa_3", "c6": "ap_uxd", "c7": "ap_7r"
+    "cs1": "ap_padrao", "cs2": "gelo_inf", "cs3": "tatico",
+    "cs4": "ap_fullcapa", "cs5": "capa_3", "cs6": "ap_uxd", "cs7": "ap_7r"
 }
 
 # Configuração fixa das salas Shadow Salas
@@ -175,7 +175,7 @@ async def prefix_room(ctx):
         await ctx.send(f"❌ Nix: {exc}")
 
 
-# Comandos slash /c1 até /c7 e prefixo .c1 até .c7.
+# Comandos slash /cs1 até /cs7 e prefixo .cs1 até .cs7.
 for name in MODES:
     command = app_commands.Command(
         name=name,
