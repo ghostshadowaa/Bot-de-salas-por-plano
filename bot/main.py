@@ -179,7 +179,7 @@ async def prefix_room(ctx):
 for name in MODES:
     command = app_commands.Command(
         name=name,
-        description=f"Cria uma sala {name.upper()} com configuração Shadow Salas.",
+        description={"cs1":"AP padrão","cs2":"Gelo infinito","cs3":"Tático","cs4":"AP full capa","cs5":"Capa 3","cs6":"AP UXD","cs7":"AP 7R"}[name],
         callback=slash_room,
     )
     bot.tree.add_command(command)
