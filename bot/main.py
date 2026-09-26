@@ -5,8 +5,7 @@ from .config import DISCORD_TOKEN
 from .db import get_key,activate_key,get_config,save_config,register_guild,usage,add_usage
 from .nix_api import NixAPI,NixAPIError
 
-MODES={"cs1":"ap_padrao","cs2":"gelo_inf","cs3":"tatico","cs4":"ap_fullcapa","cs5":"capa_3","cs6":"ap_uxd","cs7":"ap_7r","br":"br_padrao"}
-MAPS=app_commands.Choice
+MODES={"cs1":"ap_padrao","cs2":"gelo_inf","cs3":"tatico","cs4":"ap_fullcapa","cs5":"capa_3","cs6":"ap_uxd","cs7":"ap_7r"}
 intents=discord.Intents.default()
 bot=commands.Bot(command_prefix="!",intents=intents)
 nix=NixAPI()
@@ -23,9 +22,8 @@ async def permission(interaction):
         return None,f"Limite atingido: {limit} salas."
     return k,None
 
-async def create(interaction,mode,password,delay,mapa,nome=None,**extra):
+async def create(interaction,mode,password,delay,mapa,nome="",**extra):
     await interaction.response.defer(ephemeral=True)
-    if not interaction.guild:return await interaction.followup.send("Use o comando em um servidor.",ephemeral=True)
     k,err=await permission(interaction)
     if err:return await interaction.followup.send(err,ephemeral=True)
     data={"password":password,"start_delay_minutes":delay,"config_type":mode,"map_name":mapa}
@@ -44,9 +42,9 @@ async def create(interaction,mode,password,delay,mapa,nome=None,**extra):
         await interaction.followup.send(f"❌ Nix: {e}",ephemeral=True)
 
 async def cs_callback(interaction:discord.Interaction,password:str,delay:int=1,mapa:str="Bermuda",nome:str=""):
-    await create(interaction,interaction.command.name and MODES[interaction.command.name],password,delay,mapa,nome)
+    await create(interaction,MODES[interaction.command.name],password,delay,mapa,nome)
 
-for name in ("cs1","cs2","cs3","cs4","cs5","cs6","cs7"):
+for name in MODES:
     bot.tree.add_command(app_commands.Command(name=name,description=f"Cria uma sala {name.upper()}",callback=cs_callback))
 
 @app_commands.command(name="br",description="Cria uma sala Battle Royale.")
@@ -64,7 +62,7 @@ async def ativar(interaction:discord.Interaction,key:str):
     await interaction.response.send_message(f"✅ Plano **{(k.get('plans') or {}).get('name','Plano')}** ativado.",ephemeral=True)
 
 @bot.tree.command(name="config",description="Configura cargo autorizado e canal de avisos.")
-@app_commands.describe(cargo="Cargo que pode criar sem limite","canal"="Canal para avisos")
+@app_commands.describe(cargo="Cargo que pode criar sem limite",canal="Canal para avisos")
 async def config_cmd(interaction:discord.Interaction,cargo:discord.Role=None,canal:discord.TextChannel=None):
     if interaction.user.id!=interaction.guild.owner_id:return await interaction.response.send_message("Somente o dono pode configurar.",ephemeral=True)
     save_config(interaction.guild.id,cargo.id if cargo else None,canal.id if canal else None)
@@ -84,7 +82,6 @@ async def on_ready():
     print(f"Shadow Salas online como {bot.user} em {len(bot.guilds)} servidores.")
 
 @bot.event
-async def on_guild_join(guild):
-    register_guild(guild)
+async def on_guild_join(guild): register_guild(guild)
 
 bot.run(DISCORD_TOKEN)
