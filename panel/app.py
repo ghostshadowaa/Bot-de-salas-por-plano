@@ -3,14 +3,14 @@ from datetime import datetime,timezone,timedelta
 from flask import Flask,request,redirect,session,render_template
 from werkzeug.security import check_password_hash
 from bot.config import PANEL_USERNAME,PANEL_PASSWORD_HASH
-from bot.db import db,list_keys if False else db
+from bot.db import db
 
 app=Flask(__name__)
 app.secret_key=os.environ.get("SECRET_KEY",secrets.token_hex(32))
 
 def ok(): return session.get("admin") is True
 
-@app.route("/",methods=["GET"])
+@app.route("/")
 def home(): return redirect("/painel")
 
 @app.route("/painel-login",methods=["GET","POST"])
@@ -38,10 +38,10 @@ def painel():
 def new_key():
     if not ok(): return redirect("/painel-login")
     plan_id=int(request.form["plan_id"])
-    p=db.table("plans").select("*").eq("id",plan_id).limit(1).execute().data
-    if not p:return redirect("/painel")
-    p=p[0]
-    value="SHADOW-"+ "-".join("".join(secrets.choice(string.ascii_uppercase+string.digits) for _ in range(4)) for _ in range(3))
+    rows=db.table("plans").select("*").eq("id",plan_id).limit(1).execute().data
+    if not rows:return redirect("/painel")
+    p=rows[0]
+    value="SHADOW-"+"-".join("".join(secrets.choice(string.ascii_uppercase+string.digits) for _ in range(4)) for _ in range(3))
     expires=(datetime.now(timezone.utc)+timedelta(days=p["duration_days"])).isoformat()
     db.table("keys").insert({"key":value,"plan_id":plan_id,"expires_at":expires,"active":True}).execute()
     return redirect("/painel")
@@ -61,5 +61,3 @@ def broadcast():
 
 @app.route("/health")
 def health():return {"status":"ok"}
-
-if __name__=="__main__":app.run()
