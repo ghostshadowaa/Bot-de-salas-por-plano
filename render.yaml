@@ -19,7 +19,7 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-  - type: worker
+  - type: web
     name: shadow-salas-bot
     runtime: python
     buildCommand: pip install -r requirements.txt
