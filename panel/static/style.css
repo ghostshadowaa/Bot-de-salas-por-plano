@@ -25,3 +25,11 @@ button{background:#7c3aed;border:0;font-weight:700;cursor:pointer}
 .ok{color:#86efac}.off{color:#fca5a5}
 .login{max-width:420px;margin:12vh auto}
 @media(max-width:750px){.stats{grid-template-columns:1fr}.grid-form{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.key-head{flex-direction:column}}
+
+.batch-form{grid-template-columns:1.2fr 1fr 1fr 150px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9999}
+.modal-card{position:relative;width:min(620px,100%);max-height:90vh;overflow:auto;background:#15111f;border:1px solid #6d28d9;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-card h2{margin-top:0}
+.modal-card textarea{min-height:180px;resize:vertical;font-family:monospace}
+.modal-close{position:absolute;right:12px;top:10px;width:40px;margin:0;padding:6px;font-size:24px;background:transparent;color:#aaa}
+@media(max-width:750px){.batch-form{grid-template-columns:1fr}}
