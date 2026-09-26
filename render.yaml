@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: shadow-salas-panel
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn panel.app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: NIX_API_TOKEN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: PANEL_USERNAME
+        sync: false
+      - key: PANEL_PASSWORD_HASH
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+  - type: worker
+    name: shadow-salas-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m bot.main
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: NIX_API_TOKEN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
