@@ -4,17 +4,18 @@ from discord.ext import commands
 from .config import DISCORD_TOKEN
 from .db import get_key,activate_key,get_config,save_config,register_guild,usage,add_usage
 from .nix_api import NixAPI,NixAPIError
+from .tasks import start_background
 
 MODES={"cs1":"ap_padrao","cs2":"gelo_inf","cs3":"tatico","cs4":"ap_fullcapa","cs5":"capa_3","cs6":"ap_uxd","cs7":"ap_7r"}
 intents=discord.Intents.default()
 bot=commands.Bot(command_prefix="!",intents=intents)
 nix=NixAPI()
+worker_started=False
 
 async def permission(interaction):
     k=get_key(interaction.guild.id)
     if not k:return None,"Nenhum plano ativo. Use /ativar."
-    plan=k.get("plan") or {}
-    cfg=get_config(interaction.guild.id)
+    plan=k.get("plan") or {}; cfg=get_config(interaction.guild.id)
     role=cfg.get("room_role_id")
     unlimited=bool(role and any(r.id==int(role) for r in interaction.user.roles))
     limit=plan.get("room_limit")
@@ -77,8 +78,12 @@ async def status(interaction:discord.Interaction):
 
 @bot.event
 async def on_ready():
+    global worker_started
     for guild in bot.guilds:register_guild(guild)
     await bot.tree.sync()
+    if not worker_started:
+        start_background(bot)
+        worker_started=True
     print(f"Shadow Salas online como {bot.user} em {len(bot.guilds)} servidores.")
 
 @bot.event
