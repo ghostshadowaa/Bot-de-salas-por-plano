@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shadow Panel</title><link rel="stylesheet" href="/static/style.css"></head>
+<body><main class="wrap"><header><h1>Shadow Panel</h1><a href="/logout">Sair</a></header>
+<section class="card"><h2>Gerar key</h2><form method="post" action="/painel/keys"><select name="plan_id">{% for p in plans %}<option value="{{p.id}}">{{p.name}} — {{p.room_limit if p.room_limit is not none else '∞'}} salas / {{p.duration_days}} dias</option>{% endfor %}</select><button>Gerar key</button></form></section>
+<section class="card"><h2>Keys</h2>{% for k in keys %}<div class="row"><b>{{k.key}}</b><span>{{k.plans.name if k.plans else '—'}}</span><span>{{'ATIVA' if k.active else 'DESATIVADA'}}</span><form method="post" action="/painel/keys/{{k.id}}/toggle"><button>Alternar</button></form></div>{% else %}<p>Nenhuma key.</p>{% endfor %}</section>
+<section class="card"><h2>Servidores</h2>{% for s in guilds %}<div class="row"><span>{{s.name}}</span><span>{{s.guild_id}}</span><span>{{s.owner_id}}</span></div>{% else %}<p>Nenhum servidor registrado.</p>{% endfor %}</section>
+<section class="card"><h2>Aviso global</h2><form method="post" action="/painel/broadcast"><textarea name="message" required placeholder="Mensagem"></textarea><button>Enviar aviso</button></form></section>
+</main></body></html>
