@@ -46,7 +46,7 @@
   <div class="modal-card">
     <button type="button" class="modal-close" onclick="closeBatchModal()">×</button>
     <h2>✅ Keys criadas com sucesso</h2>
-    <p><b>Tipo:</b> {{batch_result.duration_days}} dias</p>
+    <p><b>Tipo:</b> {{batch_result.plan_name}} — {{batch_result.duration_days}} dias</p>
     <p><b>Quantidade:</b> {{batch_result.quantity}}</p>
     <button type="button" id="copyBatchBtn">📋 Copiar keys</button>
     <textarea id="batchKeys" readonly>{{batch_result.keys|join(batch_result.separator)}}</textarea>
