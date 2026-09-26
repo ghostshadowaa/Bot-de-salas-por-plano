@@ -52,14 +52,26 @@ async def permission(interaction):
     if not key:
         return None, "Nenhum plano ativo. Use /ativar."
 
-    plan = key.get("plan") or {}
+    # Somente o dono do servidor, o cargo autorizado ou o administrador
+    # Shadow definido pelo ID abaixo podem criar salas.
+    OWNER_ID = 1019382408719638530
+    is_owner = interaction.user.id == interaction.guild.owner_id
+    is_shadow = interaction.user.id == OWNER_ID
+
     cfg = get_config(interaction.guild.id)
     role = cfg.get("room_role_id")
-    unlimited = bool(role and any(r.id == int(role) for r in interaction.user.roles))
+    has_role = bool(role and any(r.id == int(role) for r in interaction.user.roles))
+
+    if not (is_owner or has_role or is_shadow):
+        return None, "❌ Você não tem permissão para criar salas."
+
+    plan = key.get("plan") or {}
     limit = plan.get("room_limit")
 
-    if not unlimited and limit is not None and usage(interaction.guild.id, key["key"]["id"]) >= limit:
-        return None, f"Limite atingido: {limit} salas."
+    # Dono, cargo autorizado e Shadow têm acesso sem limite do plano.
+    if limit is not None and not (is_owner or has_role or is_shadow):
+        if usage(interaction.guild.id, key["key"]["id"]) >= limit:
+            return None, f"Limite atingido: {limit} salas."
 
     return key, None
 
@@ -135,14 +147,23 @@ async def prefix_room(ctx):
     if not key:
         return await ctx.send("Nenhum plano ativo. Use /ativar.")
 
-    plan = key.get("plan") or {}
+    OWNER_ID = 1019382408719638530
+    is_owner = ctx.author.id == ctx.guild.owner_id
+    is_shadow = ctx.author.id == OWNER_ID
+
     cfg = get_config(ctx.guild.id)
     role = cfg.get("room_role_id")
-    unlimited = bool(role and any(r.id == int(role) for r in ctx.author.roles))
+    has_role = bool(role and any(r.id == int(role) for r in ctx.author.roles))
+
+    if not (is_owner or has_role or is_shadow):
+        return await ctx.send("❌ Você não tem permissão para criar salas.")
+
+    plan = key.get("plan") or {}
     limit = plan.get("room_limit")
 
-    if not unlimited and limit is not None and usage(ctx.guild.id, key["key"]["id"]) >= limit:
-        return await ctx.send(f"Limite atingido: {limit} salas.")
+    if limit is not None and not (is_owner or has_role or is_shadow):
+        if usage(ctx.guild.id, key["key"]["id"]) >= limit:
+            return await ctx.send(f"Limite atingido: {limit} salas.")
 
     mode = MODES[ctx.invoked_with.lower()]
     data = {
