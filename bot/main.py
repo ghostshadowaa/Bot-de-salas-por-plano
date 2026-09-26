@@ -111,7 +111,7 @@ async def create(interaction, mode):
         )
 
         if result.get("region"):
-            embed.add_field(name="Região", value=str(result["region"]), inline=True))
+            embed.add_field(name="Região", value=str(result["region"]), inline=True)
 
         if result.get("invite_link"):
             embed.add_field(name="Link", value=result["invite_link"], inline=False)
