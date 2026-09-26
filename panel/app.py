@@ -82,6 +82,49 @@ def new_key():
     db.table("keys").insert({"key":value,"plan_id":plan_id,"expires_at":expires,"active":True}).execute()
     return redirect("/painel")
 
+@app.route("/painel/keys/batch",methods=["POST"])
+def batch_keys():
+    if not ok():
+        return redirect_login()
+
+    try:
+        plan_id=int(request.form.get("plan_id",""))
+        quantity=int(request.form.get("quantity",""))
+    except (TypeError,ValueError):
+        return redirect("/painel")
+
+    separator=request.form.get("separator","|")
+    if not separator:
+        separator="|"
+
+    quantity=max(1,min(quantity,1000))
+    rows=db.table("plans").select("*").eq("id",plan_id).eq("active",True).limit(1).execute().data
+    if not rows:
+        return redirect("/painel")
+
+    keys=[]
+    for _ in range(quantity):
+        value="SHADOW-"+"-".join(
+            "".join(secrets.choice(string.ascii_uppercase+string.digits) for _ in range(4))
+            for _ in range(3)
+        )
+        keys.append(value)
+
+    db.table("keys").insert([
+        {"key":value,"plan_id":plan_id,"expires_at":None,"active":True}
+        for value in keys
+    ]).execute()
+
+    session["batch_result"]={
+        "plan_name":rows[0]["name"],
+        "duration_days":rows[0]["duration_days"],
+        "quantity":len(keys),
+        "separator":separator,
+        "keys":keys,
+    }
+    return redirect("/painel")
+
+
 @app.route("/painel/keys/<int:key_id>/toggle",methods=["POST"])
 def toggle(key_id):
     if not ok():
