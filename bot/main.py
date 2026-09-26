@@ -187,14 +187,6 @@ for name in MODES:
     bot.command(name)(prefix_room)
 
 
-@bot.tree.command(name="br", description="Cria uma sala Battle Royale.")
-async def br(interaction: discord.Interaction):
-    await create(interaction, "br_padrao")
-
-
-bot.tree.add_command(br)
-
-
 @bot.tree.command(name="ativar", description="Ativa uma key neste servidor.")
 @app_commands.describe(key="Chave recebida")
 async def ativar(interaction: discord.Interaction, key: str):
