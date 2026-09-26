@@ -29,6 +29,32 @@
 </section>
 
 <section class="card">
+  <h2>Gerar várias keys</h2>
+  <form method="post" action="/painel/keys/batch" class="grid-form batch-form">
+    <select name="plan_id" required>
+      <option value="" disabled selected>Key: escolha o tipo</option>
+      {% for p in plans %}<option value="{{p.id}}">Key: {{p.duration_days}} dias — {{p.name}}</option>{% endfor %}
+    </select>
+    <input type="number" name="quantity" min="1" max="1000" value="100" placeholder="Quantidade: 100" required>
+    <input type="text" name="separator" value="|" maxlength="20" placeholder="Separar por: |" required>
+    <button type="submit">Criar</button>
+  </form>
+</section>
+
+{% if batch_result %}
+<div class="modal-backdrop" id="batchModal">
+  <div class="modal-card">
+    <button type="button" class="modal-close" onclick="closeBatchModal()">×</button>
+    <h2>✅ Keys criadas com sucesso</h2>
+    <p><b>Tipo:</b> {{batch_result.duration_days}} dias</p>
+    <p><b>Quantidade:</b> {{batch_result.quantity}}</p>
+    <button type="button" id="copyBatchBtn">📋 Copiar keys</button>
+    <textarea id="batchKeys" readonly>{{batch_result.keys|join(batch_result.separator)}}</textarea>
+  </div>
+</div>
+{% endif %}
+
+<section class="card">
 <h2>Keys</h2>
 {% for k in keys %}
 {% set link=linked_by_key.get(k.id|string) %}
@@ -99,6 +125,20 @@ document.querySelectorAll('.copy-btn').forEach(btn=>{
     }
   });
 });
+  {% if batch_result %}
+const batchText={{ (batch_result.keys|join(batch_result.separator))|tojson }};
+document.getElementById('copyBatchBtn')?.addEventListener('click',async()=>{
+  try{
+    await navigator.clipboard.writeText(batchText);
+    const btn=document.getElementById('copyBatchBtn');
+    const old=btn.textContent; btn.textContent='✅ Keys copiadas!';
+    setTimeout(()=>btn.textContent=old,1600);
+  }catch(e){
+    prompt('Copie as keys:',batchText);
+  }
+});
+function closeBatchModal(){document.getElementById('batchModal')?.remove();}
+  {% endif %}
 </script>
 </body>
 </html>
