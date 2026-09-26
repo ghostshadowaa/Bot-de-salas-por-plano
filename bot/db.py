@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from supabase import create_client
 from .config import SUPABASE_URL, SUPABASE_KEY
 
@@ -28,6 +28,11 @@ def activate_key(guild_id, value):
     key = r.data[0]
     if key.get("expires_at") and key["expires_at"] <= now():
         return None, "EXPIRED"
+
+    duration_days = (key.get("plans") or {}).get("duration_days")
+    if duration_days is not None:
+        key["expires_at"] = (datetime.now(timezone.utc) + timedelta(days=int(duration_days))).isoformat()
+        db.table("keys").update({"expires_at": key["expires_at"]}).eq("id", key["id"]).execute()
 
     db.table("guild_keys").update({"active": False}).eq("guild_id", str(guild_id)).execute()
     db.table("guild_keys").upsert(
