@@ -49,7 +49,7 @@
     <p><b>Tipo:</b> {{batch_result.plan_name}} — {{batch_result.duration_days}} dias</p>
     <p><b>Quantidade:</b> {{batch_result.quantity}}</p>
     <button type="button" id="copyBatchBtn">📋 Copiar keys</button>
-    <textarea id="batchKeys" readonly>{{batch_result.keys|join(batch_result.separator)}}</textarea>
+    <textarea id="batchKeys" readonly>{{batch_result["keys"]|join(batch_result["separator"])}}</textarea>
   </div>
 </div>
 {% endif %}
@@ -126,7 +126,7 @@ document.querySelectorAll('.copy-btn').forEach(btn=>{
   });
 });
   {% if batch_result %}
-const batchText={{ (batch_result.keys|join(batch_result.separator))|tojson }};
+const batchText={{ (batch_result["keys"]|join(batch_result["separator"]))|tojson }};
 document.getElementById('copyBatchBtn')?.addEventListener('click',async()=>{
   try{
     await navigator.clipboard.writeText(batchText);
