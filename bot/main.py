@@ -65,7 +65,7 @@ async def permission(interaction):
 
 
 async def create(interaction, mode):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
 
     key, err = await permission(interaction)
     if err:
@@ -116,7 +116,7 @@ async def create(interaction, mode):
         if result.get("invite_link"):
             embed.add_field(name="Link", value=result["invite_link"], inline=False)
 
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed)
 
     except NixAPIError as exc:
         await interaction.followup.send(f"❌ Nix: {exc}", ephemeral=True)
