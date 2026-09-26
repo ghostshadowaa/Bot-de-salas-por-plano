@@ -63,6 +63,7 @@ def painel():
         active_guild_keys=active_guild_keys,
         linked_by_key=linked_by_key,
         config_by_guild=config_by_guild,
+        batch_result=session.pop("batch_result", None),
     )
 
 @app.route("/painel/keys",methods=["POST"])
