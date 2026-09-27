@@ -48,18 +48,22 @@ def receive_event(event_type, payload):
 
     event_id = make_event_id(event_type, payload)
 
-    if supabase is None:
-        return jsonify({
-            "success": False,
-            "message": "API configurada, mas o Supabase não está configurado no ambiente."
-        }), 503
-
     row = {
         "event_id": event_id,
         "event_type": event_type,
         "payload": payload,
         "received_at": datetime.now(timezone.utc).isoformat(),
     }
+
+    if supabase is None:
+        app.logger.info("Evento recebido sem persistência: %s", event_id)
+        return jsonify({
+            "success": True,
+            "message": "Evento recebido.",
+            "event_id": event_id,
+            "event_type": event_type,
+            "stored": False,
+        }), 200
 
     try:
         result = (
