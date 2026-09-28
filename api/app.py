@@ -1,6 +1,7 @@
 import hashlib
 import os
 import secrets
+import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 import requests
@@ -25,6 +26,9 @@ NIX_AUTH_PREFIX = "Bearer "
 ADMIN_USERNAME = os.environ.get("PANEL_USERNAME", os.environ.get("ADMIN_USERNAME", "Shadow"))
 ADMIN_PASSWORD_HASH = os.environ.get("PANEL_PASSWORD_HASH", os.environ.get("ADMIN_PASSWORD_HASH", ""))
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")
+DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET", "")
+DISCORD_REDIRECT_URI = os.environ.get("DISCORD_REDIRECT_URI", "")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL e SUPABASE_KEY precisam estar configurados.")
@@ -62,6 +66,10 @@ def valid_key(row):
 
 def admin():
     return session.get("admin") is True
+
+
+def discord_user():
+    return session.get("discord_user")
 
 
 def create_key(label, days, owner=None, max_rooms=None, rate_limit=30):
@@ -298,6 +306,8 @@ Content-Type: application/json</pre><p class="muted">A chave é armazenada no ba
 def home():
     if admin():
         return redirect("/admin")
+    if discord_user():
+        return redirect("/admin")
     return redirect("/login")
 
 
@@ -493,9 +503,49 @@ def admin_create_room():
 
 @app.get("/login")
 def login():
-    if admin():
+    if admin() or discord_user():
         return redirect("/admin")
-    return render_template_string(LOGIN_HTML, error=None)
+    if not (DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET and DISCORD_REDIRECT_URI):
+        return render_template_string(LOGIN_HTML, error="Login com Discord ainda não foi configurado no servidor."), 503
+    params = urllib.parse.urlencode({
+        "client_id": DISCORD_CLIENT_ID,
+        "redirect_uri": DISCORD_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "identify",
+    })
+    session["oauth_state"] = secrets.token_urlsafe(24)
+    params += "&state=" + urllib.parse.quote(session["oauth_state"])
+    return redirect("https://discord.com/oauth2/authorize?" + params)
+
+
+@app.get("/auth/discord/callback")
+def discord_callback():
+    if request.args.get("state") != session.pop("oauth_state", None):
+        return render_template_string(LOGIN_HTML, error="Sessão de autenticação inválida."), 400
+    code = request.args.get("code", "")
+    if not code:
+        return render_template_string(LOGIN_HTML, error="Autorização do Discord não concluída."), 400
+    try:
+        token = requests.post("https://discord.com/api/oauth2/token", data={
+            "client_id": DISCORD_CLIENT_ID,
+            "client_secret": DISCORD_CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": DISCORD_REDIRECT_URI,
+        }, timeout=15)
+        token.raise_for_status()
+        access_token = token.json()["access_token"]
+        user = requests.get("https://discord.com/api/v10/users/@me", headers={
+            "Authorization": f"Bearer {access_token}"
+        }, timeout=15)
+        user.raise_for_status()
+        session.clear()
+        session.permanent = True
+        session["discord_user"] = user.json()
+        session["login_at"] = iso(now())
+        return redirect("/admin")
+    except (requests.RequestException, KeyError, ValueError):
+        return render_template_string(LOGIN_HTML, error="Não foi possível concluir o login com Discord."), 502
 
 
 @app.post("/login")
