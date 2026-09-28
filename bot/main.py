@@ -1,13 +1,13 @@
 import discord
 import os
 import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from discord import app_commands
 from discord.ext import commands
 from .config import DISCORD_TOKEN
 from .db import get_key, activate_key, get_config, save_config, register_guild, usage, add_usage
 from .nix_api import NixAPI, NixAPIError
 from .tasks import start_background
+from api.app import app as api_app
 
 MODES = {
     "cs1": "ap_padrao", "cs2": "gelo_inf", "cs3": "tatico",
