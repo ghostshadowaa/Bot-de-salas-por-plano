@@ -27,7 +27,11 @@ nix = NixAPI()
 worker_started = False
 
 
-threading.Thread(target=start_health_server, daemon=True).start()
+def start_api_server():
+    port = int(os.environ.get("PORT", "10000"))
+    api_app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+
+threading.Thread(target=start_api_server, daemon=True).start()
 
 
 async def permission(interaction):
