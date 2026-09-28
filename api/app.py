@@ -58,22 +58,44 @@ def get_path(data, paths):
             x=x[part]
         if x not in (None,""): return x
     return None
-def extract_sale(data):
-    product=get_path(data,["product_id","product.id","data.product_id","order.product_id","order.product.id"])
-    if product is None:
-        for p in ["line_items","order.line_items","data.line_items","items"]:
-            arr=get_path(data,[p])
-            if isinstance(arr,list) and arr and isinstance(arr[0],dict):
-                product=arr[0].get("product_id") or (arr[0].get("product") or {}).get("id")
-                if product is not None: break
-    return {
-        "product_id": str(product) if product is not None else None,
-        "buyer_user_id": str(get_path(data,["discord_user_id","buyer_user_id","user_id","customer.discord_user_id","metadata.discord_user_id","data.discord_user_id"])) if get_path(data,["discord_user_id","buyer_user_id","user_id","customer.discord_user_id","metadata.discord_user_id","data.discord_user_id"]) is not None else None,
-        "external_sale_id": str(get_path(data,["sale_id","order_id","id","transaction_id","payment_id","data.id"])) if get_path(data,["sale_id","order_id","id","transaction_id","payment_id","data.id"]) is not None else None,
-        "status": str(get_path(data,["status","payment_status","order.status","payment.status","data.status"]) or "paid").lower(),
-        "amount": get_path(data,["amount","value","total","order.total","payment.amount"]),
-        "currency": get_path(data,["currency","order.currency","payment.currency"])
-    }
+def extract_sales(data):
+    """
+    Formato real da AG Solutions:
+    data.order é um objeto onde cada chave é o ID do produto.
+    Cada produto possui amount, productId, totalDays, totalPrice etc.
+    """
+    root = data.get("data") or {}
+    order = root.get("order") or {}
+    user = root.get("user") or {}
+    guild = root.get("guild") or {}
+
+    if not isinstance(order, dict):
+        return []
+
+    sales = []
+    for order_key, item in order.items():
+        if not isinstance(item, dict):
+            continue
+
+        product_id = item.get("productId") or order_key
+        if not product_id:
+            continue
+
+        sales.append({
+            "product_id": str(product_id),
+            "buyer_user_id": str(user.get("id")) if user.get("id") else None,
+            "buyer_name": user.get("name"),
+            "guild_id": str(guild.get("id")) if guild.get("id") else None,
+            "guild_name": guild.get("name"),
+            "amount": item.get("totalPrice"),
+            "quantity": item.get("amount", 1),
+            "duration_days": item.get("totalDays") or item.get("unitDays"),
+            "product_name": item.get("name"),
+            "status": "paid" if data.get("type") == "payment" else str(data.get("type") or "unknown").lower(),
+        })
+
+    return sales
+
 def authorized():
     secret=os.environ.get("OLIVERY_WEBHOOK_SECRET","")
     supplied=request.headers.get("X-Automation-Secret","")
@@ -109,28 +131,93 @@ def rooms():
     except requests.RequestException:
         return jsonify({"error":"Falha ao comunicar com o provedor"}),502
 
+@app.post("/")
 @app.post("/automation/ag-solutions")
 def ag_solutions_automation():
-    if not authorized(): return jsonify({"ok":False,"error":"Automação não autorizada"}),401
-    payload=body(); sale=extract_sale(payload)
-    if not sale["product_id"]: return jsonify({"ok":False,"error":"product_id não encontrado no POST"}),400
-    if sale["external_sale_id"]:
-        old=db.table("api_sales").select("*").eq("external_sale_id",sale["external_sale_id"]).limit(1).execute()
-        if old.data:
-            s=old.data[0]
-            return jsonify({"ok":True,"duplicate":True,"sale_id":s["id"],"api_key_id":s.get("api_key_id")})
-    p=db.table("api_products").select("*").eq("product_id",sale["product_id"]).eq("active",True).limit(1).execute()
-    product=(p.data or [None])[0]
-    if not product:
-        db.table("api_sales").insert({"external_sale_id":sale["external_sale_id"],"product_id":sale["product_id"],"buyer_user_id":sale["buyer_user_id"],"status":"product_not_configured","amount":sale["amount"],"currency":sale["currency"],"request_body":payload}).execute()
-        return jsonify({"ok":False,"error":"Produto não configurado","product_id":sale["product_id"]}),422
-    if sale["status"] not in {"paid","completed","approved","succeeded","success","processing"}:
-        r=db.table("api_sales").insert({"external_sale_id":sale["external_sale_id"],"product_id":sale["product_id"],"buyer_user_id":sale["buyer_user_id"],"status":sale["status"],"amount":sale["amount"],"currency":sale["currency"],"request_body":payload}).execute()
-        return jsonify({"ok":True,"paid":False,"sale_id":(r.data or [{}])[0].get("id"),"status":sale["status"]})
-    if not sale["buyer_user_id"]: return jsonify({"ok":False,"error":"Envie discord_user_id/buyer_user_id no POST"}),400
-    raw,k=create_key(product["name"]+" • "+sale["buyer_user_id"],int(product["duration_days"]),sale["buyer_user_id"],sale["product_id"])
-    r=db.table("api_sales").insert({"external_sale_id":sale["external_sale_id"],"product_id":sale["product_id"],"buyer_user_id":sale["buyer_user_id"],"api_key_id":k["id"],"status":"paid","amount":sale["amount"],"currency":sale["currency"],"request_body":payload}).execute()
-    return jsonify({"ok":True,"paid":True,"sale_id":(r.data or [{}])[0].get("id"),"product_id":sale["product_id"],"buyer_user_id":sale["buyer_user_id"],"api_key_id":k["id"],"api_key":raw,"duration_days":product["duration_days"]}),201
+    if not authorized():
+        return jsonify({"ok": False, "error": "Automação AG Solutions não autorizada"}), 401
+
+    payload = body()
+    sales = extract_sales(payload)
+
+    if not sales:
+        return jsonify({"ok": False, "error": "Nenhum produto encontrado em data.order"}), 400
+
+    results = []
+
+    for sale in sales:
+        product_result = db.table("api_products").select("*").eq(
+            "product_id", sale["product_id"]
+        ).eq("active", True).limit(1).execute()
+        product = (product_result.data or [None])[0]
+
+        # Se o produto ainda não estiver configurado, registra a venda sem criar chave.
+        if not product:
+            row = {
+                "external_sale_id": None,
+                "product_id": sale["product_id"],
+                "buyer_user_id": sale["buyer_user_id"],
+                "status": "product_not_configured",
+                "amount": sale["amount"],
+                "currency": "BRL",
+                "request_body": payload,
+            }
+            saved = db.table("api_sales").insert(row).execute()
+            results.append({
+                "ok": False,
+                "product_id": sale["product_id"],
+                "product_name": sale["product_name"],
+                "error": "Produto não configurado no painel",
+                "sale_id": (saved.data or [{}])[0].get("id"),
+            })
+            continue
+
+        if not sale["buyer_user_id"]:
+            results.append({
+                "ok": False,
+                "product_id": sale["product_id"],
+                "error": "data.user.id não encontrado",
+            })
+            continue
+
+        # A duração configurada no painel tem prioridade.
+        days = int(product["duration_days"])
+        raw_key, key = create_key(
+            f"{product['name']} • {sale['buyer_user_id']}",
+            days,
+            sale["buyer_user_id"],
+            sale["product_id"],
+        )
+
+        saved = db.table("api_sales").insert({
+            "external_sale_id": None,
+            "product_id": sale["product_id"],
+            "buyer_user_id": sale["buyer_user_id"],
+            "api_key_id": key["id"],
+            "status": "paid",
+            "amount": sale["amount"],
+            "currency": "BRL",
+            "request_body": payload,
+        }).execute()
+
+        results.append({
+            "ok": True,
+            "product_id": sale["product_id"],
+            "product_name": product["name"],
+            "buyer_user_id": sale["buyer_user_id"],
+            "guild_id": sale["guild_id"],
+            "api_key_id": key["id"],
+            "api_key": raw_key,
+            "duration_days": days,
+            "sale_id": (saved.data or [{}])[0].get("id"),
+        })
+
+    return jsonify({
+        "ok": all(x.get("ok") for x in results),
+        "type": payload.get("type"),
+        "buyer": (payload.get("data") or {}).get("user"),
+        "results": results,
+    }), 201 if any(x.get("ok") for x in results) else 422
 
 @app.get("/admin/login")
 def login():
