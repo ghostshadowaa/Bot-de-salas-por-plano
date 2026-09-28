@@ -2,7 +2,7 @@ import hashlib
 import os
 import secrets
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import requests
 from flask import Flask, jsonify, redirect, render_template_string, request, session, url_for
@@ -41,184 +41,39 @@ button{background:#7c3aed;border:0;font-weight:bold}.err{color:#ff7b7b;margin-to
 
 DASHBOARD_HTML = """
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shadow API</title><style>
-body{margin:0;background:#0b0712;color:#eee;font-family:Arial,sans-serif}.wrap{max-width:1100px;margin:auto;padding:22px}
-header{display:flex;justify-content:space-between;align-items:center;gap:15px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.card{background:#151020;border:1px solid #392450;border-radius:16px;padding:18px}.accent{color:#a78bfa}
-input,button{box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid #4b3564;background:#0f0b17;color:#fff}input{width:100%;margin:5px 0}button{background:#7c3aed;border:0;font-weight:bold;cursor:pointer}
-table{width:100%;border-collapse:collapse;margin-top:10px}th,td{text-align:left;padding:10px;border-bottom:1px solid #2b2038;font-size:14px}.key{font-family:monospace;word-break:break-all}
-.badge{padding:4px 8px;border-radius:999px;background:#261d35}.danger{background:#7f1d1d}.ok{background:#14532d}.top{display:flex;justify-content:space-between;align-items:center}
-small{color:#aaa}.copy{margin-top:10px}
-</style></head><body><div class="wrap"><header><div><h1>Shadow API</h1><small>Gerenciamento de chaves para sua API de salas</small></div><a href="/admin/logout" style="color:#c4b5fd">Sair</a></header>
-<div class="grid" style="margin-top:18px"><div class="card"><h2>Nova chave</h2><form method="post" action="/admin/keys">
-<input name="label" placeholder="Nome do cliente" required>
-<input name="days" type="number" min="1" placeholder="Validade em dias" required>
-<input name="max_rooms" type="number" min="0" placeholder="Limite de salas (0 = ilimitado)">
-<input name="rate_limit" type="number" min="1" value="30" placeholder="Chamadas por minuto">
-<button>Criar chave</button></form></div>
-<div class="card"><h2>API</h2><p><span class="accent">POST /v1/rooms</span></p><p>O cliente envia a chave em <b>X-API-Key</b>. O servidor valida a chave e encaminha o JSON para a Nix sem revelar seu token Nix.</p><p><small>Chaves são exibidas integralmente somente no momento da criação.</small></p></div></div>
-{% if new_key %}<div class="card" style="margin-top:16px"><h2>Chave criada</h2><p class="key">{{new_key}}</p><button class="copy" onclick="navigator.clipboard.writeText({{new_key|tojson}})">Copiar chave</button></div>{% endif %}
-<div class="card" style="margin-top:16px"><div class="top"><h2>Chaves</h2><small>{{keys|length}} cadastradas</small></div>
-<table><tr><th>Cliente</th><th>Chave</th><th>Status</th><th>Uso</th><th>Validade</th><th></th></tr>
-{% for k in keys %}<tr><td>{{k.label}}</td><td class="key">{{k.key_prefix}}••••••</td><td><span class="badge {{'ok' if k.active else 'danger'}}">{{'Ativa' if k.active else 'Revogada'}}</span></td><td>{{k.rooms_used}}{{'' if not k.max_rooms else ' / '+k.max_rooms|string}}</td><td>{{k.expires_at or 'Sem validade'}}</td><td>{% if k.active %}<form method="post" action="/admin/keys/{{k.id}}/revoke"><button>Revogar</button></form>{% endif %}</td></tr>{% endfor %}
-</table></div></div></body></html>
+<title>Shadow API • Painel</title><style>
+*{box-sizing:border-box}body{margin:0;background:#09060f;color:#f5f3ff;font-family:Inter,Arial,sans-serif}.wrap{max-width:1180px;margin:auto;padding:22px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.logo{width:44px;height:44px;border-radius:13px;background:#7c3aed;display:grid;place-items:center;font-weight:900}.muted{color:#9b93aa}
+.grid{display:grid;grid-template-columns:1fr 1.7fr;gap:18px}.card{background:#130e1c;border:1px solid #30233e;border-radius:18px;padding:20px;box-shadow:0 12px 35px #0004}
+h1,h2,h3{margin:0 0 8px}.accent{color:#a78bfa}.durations{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.duration{padding:13px;border:1px solid #3b2a4c;background:#0e0a14;border-radius:11px;color:#ddd;cursor:pointer}.duration.selected{border-color:#8b5cf6;background:#25143c;color:#fff}
+input,button{font:inherit}.input{width:100%;padding:12px;border:1px solid #3b2a4c;background:#0d0912;color:#fff;border-radius:10px;margin-top:7px}.primary{width:100%;padding:12px;border:0;border-radius:10px;background:#7c3aed;color:white;font-weight:800;cursor:pointer;margin-top:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}.stat{background:#100b16;border:1px solid #2b2036;border-radius:13px;padding:14px}.num{font-size:24px;font-weight:800}
+.keys{display:grid;gap:12px}.key{background:#100b16;border:1px solid #2b2036;border-radius:14px;padding:15px}.keytop{display:flex;justify-content:space-between;gap:10px}.pill{font-size:12px;padding:5px 9px;border-radius:99px;background:#164e32}.paused{background:#604514}.expired{background:#641d2b}.keyline{font-family:monospace;color:#c4b5fd;margin:9px 0;word-break:break-all}.meta{font-size:12px;color:#9b93aa}.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.actions button{padding:8px 11px;border-radius:9px;border:1px solid #3b2a4c;background:#18101f;color:#eee;cursor:pointer}.actions .renew{background:#4c1d95}.actions .danger{border-color:#6b2737;color:#ffb4c0}.newkey{margin-bottom:18px;border-color:#6d28d9}.newkey .keyline{font-size:15px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
+</style></head><body><div class="wrap">
+<header><div class="brand"><div class="logo">S</div><div><h1>Shadow API</h1><div class="muted">Painel de chaves</div></div></div><a href="/admin/logout" class="muted">Sair</a></header>
+<div class="stats"><div class="stat"><div class="muted">Total</div><div class="num">{{keys|length}}</div></div><div class="stat"><div class="muted">Ativas</div><div class="num">{{active_count}}</div></div><div class="stat"><div class="muted">Pausadas</div><div class="num">{{paused_count}}</div></div></div>
+{% if new_key %}<div class="card newkey"><h2>✓ Chave criada</h2><div class="muted">Copie agora. Por segurança, a chave completa não será armazenada.</div><div class="keyline">{{new_key}}</div><button class="primary" onclick="copyText({{new_key|tojson}})">Copiar chave</button></div>{% endif %}
+<div class="grid"><div class="card"><h2>Criar chave</h2><div class="muted">Escolha a duração.</div><form method="post" action="/admin/keys">
+<input class="input" name="label" placeholder="Nome do cliente" required>
+<div class="durations"><button type="button" class="duration selected" onclick="pick(1,this)">1 dia</button><button type="button" class="duration" onclick="pick(7,this)">1 semana</button><button type="button" class="duration" onclick="pick(30,this)">1 mês</button></div>
+<input type="hidden" name="days" id="days" value="1">
+<input class="input" name="max_rooms" type="number" min="0" placeholder="Limite de salas (0 = ilimitado)">
+<input class="input" name="rate_limit" type="number" min="1" value="30" placeholder="Chamadas por minuto">
+<button class="primary">+ Criar chave</button></form></div>
+<div class="card"><h2>Suas chaves</h2><div class="keys">
+{% for k in keys %}<div class="key"><div class="keytop"><div><h3>{{k.label}}</h3><div class="meta">Criada em {{k.created_at[:10]}}</div></div>
+{% if not k.active %}<span class="pill paused">Pausada</span>{% elif k.expires_at and k.expires_at < now_iso %}<span class="pill expired">Expirada</span>{% else %}<span class="pill">Ativa</span>{% endif %}</div>
+<div class="keyline">{{k.key_prefix}}••••••••••••••••</div><div class="meta">Salas usadas: {{k.rooms_used}}{{'' if not k.max_rooms else ' / '+k.max_rooms|string}} · Expira: {{k.expires_at[:16].replace('T',' ') if k.expires_at else '—'}}</div>
+<div class="actions">
+<button onclick="copyText('{{k.key_prefix}}')">Copiar prefixo</button>
+<form method="post" action="/admin/keys/{{k.id}}/renew"><button class="renew">Renovar</button></form>
+<form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{'Ativar' if not k.active else 'Pausar'}}</button></form>
+<form method="post" action="/admin/keys/{{k.id}}/delete" onsubmit="return confirm('Excluir esta chave?')"><button class="danger">Excluir</button></form>
+</div></div>{% else %}<div class="muted">Nenhuma chave criada.</div>{% endfor %}
+</div></div></div></div>
+<script>
+function pick(days,el){document.getElementById('days').value=days;document.querySelectorAll('.duration').forEach(x=>x.classList.remove('selected'));el.classList.add('selected')}
+function copyText(t){navigator.clipboard.writeText(t).then(()=>alert('Copiado!'))}
+</script></body></html>
 """
-
-def now_utc():
-    return datetime.now(timezone.utc)
-
-def sha256(value: str) -> str:
-    return hashlib.sha256(value.encode()).hexdigest()
-
-def admin_required():
-    return session.get("admin") is True
-
-def valid_key(row):
-    if not row.get("active"):
-        return False, "Chave revogada."
-    expires = row.get("expires_at")
-    if expires:
-        try:
-            dt = datetime.fromisoformat(expires.replace("Z", "+00:00"))
-            if dt <= now_utc():
-                return False, "Chave expirada."
-        except ValueError:
-            return False, "Validade da chave inválida."
-    max_rooms = row.get("max_rooms")
-    if max_rooms is not None and int(max_rooms) > 0 and int(row.get("rooms_used", 0)) >= int(max_rooms):
-        return False, "Limite de salas atingido."
-    return True, ""
-
-def find_api_key(raw_key):
-    result = db.table("api_keys").select("*").eq("key_hash", sha256(raw_key)).limit(1).execute()
-    rows = result.data or []
-    return rows[0] if rows else None
-
-def rate_limit_ok(row):
-    window_start = time.time() - 60
-    events = db.table("api_key_events").select("id", count="exact").eq("api_key_id", row["id"]).eq("event_type", "room").gte("created_at", datetime.fromtimestamp(window_start, timezone.utc).isoformat()).execute()
-    count = events.count or 0
-    return count < int(row.get("rate_limit_per_minute") or 30)
-
-@app.get("/")
-def index():
-    return jsonify({"name": "Shadow API", "status": "online", "endpoint": "/v1/rooms"})
-
-@app.get("/v1")
-def api_info():
-    return jsonify({
-        "name": "Shadow API",
-        "version": "1.0",
-        "authentication": "X-API-Key",
-        "endpoints": {"create_room": "POST /v1/rooms"},
-        "upstream": "Nix"
-    })
-
-@app.post("/v1/rooms")
-def create_room():
-    raw_key = request.headers.get("X-API-Key", "").strip()
-    if not raw_key:
-        return jsonify({"error": "missing_api_key"}), 401
-
-    key = find_api_key(raw_key)
-    if not key:
-        return jsonify({"error": "invalid_api_key"}), 401
-
-    ok, reason = valid_key(key)
-    if not ok:
-        return jsonify({"error": "api_key_unavailable", "message": reason}), 403
-
-    if not rate_limit_ok(key):
-        return jsonify({"error": "rate_limit_exceeded"}), 429
-
-    payload = request.get_json(silent=True)
-    if not isinstance(payload, dict):
-        return jsonify({"error": "invalid_json", "message": "Envie um objeto JSON."}), 400
-
-    headers = {"Content-Type": "application/json"}
-    if NIX_API_TOKEN:
-        headers[NIX_AUTH_HEADER] = NIX_AUTH_PREFIX + NIX_API_TOKEN
-
-    try:
-        upstream = requests.post(NIX_ROOMS_URL, json=payload, headers=headers, timeout=30)
-        try:
-            response_body = upstream.json()
-        except ValueError:
-            response_body = {"raw": upstream.text[:4000]}
-    except requests.RequestException as exc:
-        db.table("api_key_events").insert({"api_key_id": key["id"], "event_type":"room", "endpoint":"/v1/rooms", "status_code":502, "request_body":payload, "response_body":{"error":str(exc)}}).execute()
-        return jsonify({"error":"upstream_unavailable"}), 502
-
-    new_uses = int(key.get("rooms_used") or 0) + 1
-    db.table("api_keys").update({"rooms_used":new_uses, "last_used_at":now_utc().isoformat()}).eq("id", key["id"]).execute()
-    db.table("api_key_events").insert({"api_key_id":key["id"], "event_type":"room", "endpoint":"/v1/rooms", "status_code":upstream.status_code, "request_body":payload, "response_body":response_body}).execute()
-
-    return jsonify(response_body), upstream.status_code
-
-@app.get("/admin/login")
-def login_page():
-    return render_template_string(LOGIN_HTML, error=None)
-
-@app.post("/admin/login")
-def login():
-    username = request.form.get("username", "")
-    password = request.form.get("password", "")
-    password_ok = (ADMIN_PASSWORD_HASH and check_password_hash(ADMIN_PASSWORD_HASH, password)) or (ADMIN_PASSWORD and secrets.compare_digest(password, ADMIN_PASSWORD))
-    if username == ADMIN_USERNAME and password_ok:
-        session["admin"] = True
-        return redirect(url_for("dashboard"))
-    return render_template_string(LOGIN_HTML, error="Usuário ou senha inválidos."), 401
-
-@app.get("/admin/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login_page"))
-
-@app.get("/admin")
-def dashboard():
-    if not admin_required():
-        return redirect(url_for("login_page"))
-    rows = db.table("api_keys").select("*").order("created_at", desc=True).execute().data or []
-    return render_template_string(DASHBOARD_HTML, keys=rows, new_key=request.args.get("new_key"))
-
-@app.post("/admin/keys")
-def create_api_key():
-    if not admin_required():
-        return redirect(url_for("login_page"))
-
-    label = (request.form.get("label") or "Cliente").strip()[:80]
-    days = max(1, int(request.form.get("days") or 1))
-    max_rooms_raw = request.form.get("max_rooms", "").strip()
-    max_rooms = int(max_rooms_raw) if max_rooms_raw else None
-    if max_rooms is not None and max_rooms <= 0:
-        max_rooms = None
-    rate_limit = max(1, min(1000, int(request.form.get("rate_limit") or 30)))
-
-    raw = "sh_" + secrets.token_urlsafe(32)
-    created = now_utc()
-    expires = created.replace(microsecond=0) + __import__("datetime").timedelta(days=days)
-
-    db.table("api_keys").insert({
-        "label": label,
-        "key_prefix": raw[:10],
-        "key_hash": sha256(raw),
-        "expires_at": expires.isoformat(),
-        "max_rooms": max_rooms,
-        "rate_limit_per_minute": rate_limit
-    }).execute()
-
-    return redirect(url_for("dashboard", new_key=raw))
-
-@app.post("/admin/keys/<int:key_id>/revoke")
-def revoke_key(key_id):
-    if not admin_required():
-        return redirect(url_for("login_page"))
-    db.table("api_keys").update({"active": False}).eq("id", key_id).execute()
-    return redirect(url_for("dashboard"))
-
-@app.get("/health")
-def health():
-    return jsonify({"status":"ok"})
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "10000")))
