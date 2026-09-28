@@ -27,53 +27,167 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 db = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-LOGIN_HTML = """
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shadow API</title><style>
-body{margin:0;background:#0b0712;color:#eee;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh}
-.card{width:min(420px,90vw);background:#151020;border:1px solid #392450;border-radius:18px;padding:28px;box-shadow:0 20px 60px #0008}
-h1{margin-top:0}.muted{color:#aaa}input,button{width:100%;box-sizing:border-box;padding:13px;margin-top:10px;border-radius:10px;border:1px solid #4b3564;background:#0f0b17;color:#fff}
-button{background:#7c3aed;border:0;font-weight:bold}.err{color:#ff7b7b;margin-top:12px}
-</style></head><body><div class="card"><h1>Shadow API</h1><p class="muted">Painel administrativo</p>
-<form method="post"><input name="username" placeholder="Usuário" required><input name="password" type="password" placeholder="Senha" required><button>Entrar</button></form>
-{% if error %}<div class="err">{{error}}</div>{% endif %}</div></body></html>
-"""
+LOGIN_HTML = """<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0b0712;color:#eee;font-family:Arial;max-width:1100px;margin:30px auto;padding:15px}.card{background:#151020;border:1px solid #392450;border-radius:16px;padding:18px;margin:12px 0}input,button{padding:11px;margin:5px;border-radius:9px;background:#100b16;color:#fff;border:1px solid #493461}button{background:#7c3aed}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.muted{color:#aaa}.key{word-break:break-all;color:#c4b5fd}@media(max-width:700px){.grid{grid-template-columns:1fr}}</style><body><div class="card"><h2>Shadow API</h2><p class="muted">Painel administrativo</p><form method="post"><input name="username" placeholder="Usuário" required><input name="password" type="password" placeholder="Senha" required><button>Entrar</button></form>{% if error %}<p>{{error}}</p>{% endif %}</div></body></html>"""
 
-DASHBOARD_HTML = """
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shadow API • Painel</title><style>
-*{box-sizing:border-box}body{margin:0;background:#09060f;color:#f5f3ff;font-family:Inter,Arial,sans-serif}.wrap{max-width:1180px;margin:auto;padding:22px}
-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.logo{width:44px;height:44px;border-radius:13px;background:#7c3aed;display:grid;place-items:center;font-weight:900}.muted{color:#9b93aa}
-.grid{display:grid;grid-template-columns:1fr 1.7fr;gap:18px}.card{background:#130e1c;border:1px solid #30233e;border-radius:18px;padding:20px;box-shadow:0 12px 35px #0004}
-h1,h2,h3{margin:0 0 8px}.accent{color:#a78bfa}.durations{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.duration{padding:13px;border:1px solid #3b2a4c;background:#0e0a14;border-radius:11px;color:#ddd;cursor:pointer}.duration.selected{border-color:#8b5cf6;background:#25143c;color:#fff}
-input,button{font:inherit}.input{width:100%;padding:12px;border:1px solid #3b2a4c;background:#0d0912;color:#fff;border-radius:10px;margin-top:7px}.primary{width:100%;padding:12px;border:0;border-radius:10px;background:#7c3aed;color:white;font-weight:800;cursor:pointer;margin-top:12px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}.stat{background:#100b16;border:1px solid #2b2036;border-radius:13px;padding:14px}.num{font-size:24px;font-weight:800}
-.keys{display:grid;gap:12px}.key{background:#100b16;border:1px solid #2b2036;border-radius:14px;padding:15px}.keytop{display:flex;justify-content:space-between;gap:10px}.pill{font-size:12px;padding:5px 9px;border-radius:99px;background:#164e32}.paused{background:#604514}.expired{background:#641d2b}.keyline{font-family:monospace;color:#c4b5fd;margin:9px 0;word-break:break-all}.meta{font-size:12px;color:#9b93aa}.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.actions button{padding:8px 11px;border-radius:9px;border:1px solid #3b2a4c;background:#18101f;color:#eee;cursor:pointer}.actions .renew{background:#4c1d95}.actions .danger{border-color:#6b2737;color:#ffb4c0}.newkey{margin-bottom:18px;border-color:#6d28d9}.newkey .keyline{font-size:15px}
-@media(max-width:800px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
-</style></head><body><div class="wrap">
-<header><div class="brand"><div class="logo">S</div><div><h1>Shadow API</h1><div class="muted">Painel de chaves</div></div></div><a href="/admin/logout" class="muted">Sair</a></header>
-<div class="stats"><div class="stat"><div class="muted">Total</div><div class="num">{{keys|length}}</div></div><div class="stat"><div class="muted">Ativas</div><div class="num">{{active_count}}</div></div><div class="stat"><div class="muted">Pausadas</div><div class="num">{{paused_count}}</div></div></div>
-{% if new_key %}<div class="card newkey"><h2>✓ Chave criada</h2><div class="muted">Copie agora. Por segurança, a chave completa não será armazenada.</div><div class="keyline">{{new_key}}</div><button class="primary" onclick="copyText({{new_key|tojson}})">Copiar chave</button></div>{% endif %}
-<div class="grid"><div class="card"><h2>Criar chave</h2><div class="muted">Escolha a duração.</div><form method="post" action="/admin/keys">
-<input class="input" name="label" placeholder="Nome do cliente" required>
-<div class="durations"><button type="button" class="duration selected" onclick="pick(1,this)">1 dia</button><button type="button" class="duration" onclick="pick(7,this)">1 semana</button><button type="button" class="duration" onclick="pick(30,this)">1 mês</button></div>
-<input type="hidden" name="days" id="days" value="1">
-<input class="input" name="max_rooms" type="number" min="0" placeholder="Limite de salas (0 = ilimitado)">
-<input class="input" name="rate_limit" type="number" min="1" value="30" placeholder="Chamadas por minuto">
-<button class="primary">+ Criar chave</button></form></div>
-<div class="card"><h2>Suas chaves</h2><div class="keys">
-{% for k in keys %}<div class="key"><div class="keytop"><div><h3>{{k.label}}</h3><div class="meta">Criada em {{k.created_at[:10]}}</div></div>
-{% if not k.active %}<span class="pill paused">Pausada</span>{% elif k.expires_at and k.expires_at < now_iso %}<span class="pill expired">Expirada</span>{% else %}<span class="pill">Ativa</span>{% endif %}</div>
-<div class="keyline">{{k.key_prefix}}••••••••••••••••</div><div class="meta">Salas usadas: {{k.rooms_used}}{{'' if not k.max_rooms else ' / '+k.max_rooms|string}} · Expira: {{k.expires_at[:16].replace('T',' ') if k.expires_at else '—'}}</div>
-<div class="actions">
-<button onclick="copyText('{{k.key_prefix}}')">Copiar prefixo</button>
-<form method="post" action="/admin/keys/{{k.id}}/renew"><button class="renew">Renovar</button></form>
-<form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{'Ativar' if not k.active else 'Pausar'}}</button></form>
-<form method="post" action="/admin/keys/{{k.id}}/delete" onsubmit="return confirm('Excluir esta chave?')"><button class="danger">Excluir</button></form>
-</div></div>{% else %}<div class="muted">Nenhuma chave criada.</div>{% endfor %}
-</div></div></div></div>
-<script>
-function pick(days,el){document.getElementById('days').value=days;document.querySelectorAll('.duration').forEach(x=>x.classList.remove('selected'));el.classList.add('selected')}
-function copyText(t){navigator.clipboard.writeText(t).then(()=>alert('Copiado!'))}
-</script></body></html>
-"""
+DASHBOARD_HTML = """<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body>
+<header><h1>🟣 Shadow API</h1><a href="/admin/logout">Sair</a></header>
+<div class="grid">
+<div class="card"><h2>Criar chave</h2><form method="post" action="/admin/keys"><input name="label" placeholder="Nome do cliente" required><div><button type="button" onclick="d(1)">1 dia</button><button type="button" onclick="d(7)">1 semana</button><button type="button" onclick="d(30)">1 mês</button></div><input type="hidden" name="days" id="days" value="1"><input name="owner_user_id" placeholder="Discord User ID do dono"><input name="max_rooms" type="number" min="0" placeholder="Limite de salas (0 = ilimitado)"><button>Criar chave</button></form></div>
+<div class="card"><h2>Produtos Olivery</h2><p class="muted">O product_id recebido no POST escolhe a duração.</p><form method="post" action="/admin/products"><input name="product_id" placeholder="ID do produto" required><input name="name" placeholder="Nome do produto" required><input name="duration_days" type="number" min="1" placeholder="Dias" required><button>Salvar produto</button></form>{% for p in products %}<p><b>{{p.name}}</b> — ID <span class="key">{{p.product_id}}</span> — {{p.duration_days}} dias — {{'ativo' if p.active else 'pausado'}} <form method="post" action="/admin/products/{{p.id}}/toggle"><button>Alternar</button></form></p>{% endfor %}</div>
+</div>
+{% if new_key %}<div class="card"><h2>🔑 Chave criada</h2><p class="key">{{new_key}}</p><button onclick="navigator.clipboard.writeText({{new_key|tojson}})">Copiar</button></div>{% endif %}
+<div class="card"><h2>Chaves</h2>{% for k in keys %}<div class="card"><b>{{k.label}}</b> — {{'ATIVA' if k.active else 'PAUSADA'}}<br><span class="muted">Dono: {{k.owner_user_id or '—'}} · Produto: {{k.product_id or 'manual'}} · Expira: {{k.expires_at or '—'}}</span><br><span class="key">{{k.key_prefix}}••••••••</span><form method="post" action="/admin/keys/{{k.id}}/renew"><button>Renovar 30d</button></form><form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{'Ativar' if not k.active else 'Pausar'}}</button></form><form method="post" action="/admin/keys/{{k.id}}/delete"><button>Excluir</button></form></div>{% else %}<p>Nenhuma chave.</p>{% endfor %}</div>
+<div class="card"><h2>Últimas vendas</h2>{% for s in sales %}<p><b>Produto:</b> {{s.product_id}} · <b>Dono:</b> {{s.buyer_user_id or '—'}} · <b>Chave:</b> {{s.api_key_id or '—'}} · {{s.status}}</p>{% else %}<p>Nenhuma venda.</p>{% endfor %}</div>
+<script>function d(x){document.getElementById('days').value=x}</script></body></html>"""
+
+def now(): return datetime.now(timezone.utc)
+def iso(x): return x.isoformat()
+def hash_key(x): return hashlib.sha256(x.encode()).hexdigest()
+def make_key(): return "sk_" + secrets.token_urlsafe(30)
+def valid_key(k):
+    if not k or not k.get("active"): return False
+    if not k.get("expires_at"): return True
+    try: return datetime.fromisoformat(k["expires_at"].replace("Z","+00:00")) > now()
+    except ValueError: return False
+def body(): return request.get_json(silent=True) or {}
+def get_path(data, paths):
+    for path in paths:
+        x=data
+        for part in path.split("."):
+            if not isinstance(x,dict) or part not in x: x=None; break
+            x=x[part]
+        if x not in (None,""): return x
+    return None
+def extract_sale(data):
+    product=get_path(data,["product_id","product.id","data.product_id","order.product_id","order.product.id"])
+    if product is None:
+        for p in ["line_items","order.line_items","data.line_items","items"]:
+            arr=get_path(data,[p])
+            if isinstance(arr,list) and arr and isinstance(arr[0],dict):
+                product=arr[0].get("product_id") or (arr[0].get("product") or {}).get("id")
+                if product is not None: break
+    return {
+        "product_id": str(product) if product is not None else None,
+        "buyer_user_id": str(get_path(data,["discord_user_id","buyer_user_id","user_id","customer.discord_user_id","metadata.discord_user_id","data.discord_user_id"])) if get_path(data,["discord_user_id","buyer_user_id","user_id","customer.discord_user_id","metadata.discord_user_id","data.discord_user_id"]) is not None else None,
+        "external_sale_id": str(get_path(data,["sale_id","order_id","id","transaction_id","payment_id","data.id"])) if get_path(data,["sale_id","order_id","id","transaction_id","payment_id","data.id"]) is not None else None,
+        "status": str(get_path(data,["status","payment_status","order.status","payment.status","data.status"]) or "paid").lower(),
+        "amount": get_path(data,["amount","value","total","order.total","payment.amount"]),
+        "currency": get_path(data,["currency","order.currency","payment.currency"])
+    }
+def authorized():
+    secret=os.environ.get("OLIVERY_WEBHOOK_SECRET","")
+    supplied=request.headers.get("X-Automation-Secret","")
+    if not supplied and request.headers.get("Authorization","").lower().startswith("bearer "): supplied=request.headers["Authorization"][7:].strip()
+    return bool(secret) and secrets.compare_digest(supplied,secret)
+def create_key(label,days,owner=None,product=None,max_rooms=None):
+    raw=make_key(); t=now()
+    row={"label":label,"key_prefix":raw[:12],"key_hash":hash_key(raw),"active":True,"created_at":iso(t),"expires_at":iso(t+timedelta(days=days)),"max_rooms":max_rooms,"rooms_used":0,"rate_limit_per_minute":30,"owner_user_id":str(owner) if owner else None,"product_id":str(product) if product else None}
+    r=db.table("api_keys").insert(row).execute()
+    return raw,r.data[0]
+def log_event(kid,typ,code,payload,response=None):
+    db.table("api_key_events").insert({"api_key_id":kid,"event_type":typ,"endpoint":request.path,"status_code":code,"request_body":payload,"response_body":response}).execute()
+
+@app.get("/")
+def home(): return jsonify({"ok":True,"service":"Shadow API","automation":"POST /automation/olivery","rooms":"POST /v1/rooms"})
+@app.get("/health")
+def health(): return jsonify({"ok":True})
+@app.post("/v1/rooms")
+def rooms():
+    raw=request.headers.get("X-API-Key","").strip()
+    if not raw:return jsonify({"error":"X-API-Key ausente"}),401
+    r=db.table("api_keys").select("*").eq("key_hash",hash_key(raw)).limit(1).execute(); k=(r.data or [None])[0]
+    if not valid_key(k): return jsonify({"error":"API key inválida, pausada ou expirada"}),401
+    if k.get("max_rooms") is not None and k.get("rooms_used",0)>=k["max_rooms"]: return jsonify({"error":"Limite de salas atingido"}),403
+    payload=body()
+    try:
+        u=requests.post(NIX_ROOMS_URL,json=payload,headers={NIX_AUTH_HEADER:NIX_AUTH_PREFIX+NIX_API_TOKEN},timeout=30)
+        try: out=u.json()
+        except ValueError: out={"raw":u.text[:4000]}
+        log_event(k["id"],"room_request",u.status_code,payload,out)
+        if 200<=u.status_code<300: db.table("api_keys").update({"rooms_used":int(k.get("rooms_used") or 0)+1,"last_used_at":iso(now())}).eq("id",k["id"]).execute()
+        return jsonify(out),u.status_code
+    except requests.RequestException:
+        return jsonify({"error":"Falha ao comunicar com o provedor"}),502
+
+@app.post("/automation/olivery")
+def olivery():
+    if not authorized(): return jsonify({"ok":False,"error":"Automação não autorizada"}),401
+    payload=body(); sale=extract_sale(payload)
+    if not sale["product_id"]: return jsonify({"ok":False,"error":"product_id não encontrado no POST"}),400
+    if sale["external_sale_id"]:
+        old=db.table("api_sales").select("*").eq("external_sale_id",sale["external_sale_id"]).limit(1).execute()
+        if old.data:
+            s=old.data[0]
+            return jsonify({"ok":True,"duplicate":True,"sale_id":s["id"],"api_key_id":s.get("api_key_id")})
+    p=db.table("api_products").select("*").eq("product_id",sale["product_id"]).eq("active",True).limit(1).execute()
+    product=(p.data or [None])[0]
+    if not product:
+        db.table("api_sales").insert({"external_sale_id":sale["external_sale_id"],"product_id":sale["product_id"],"buyer_user_id":sale["buyer_user_id"],"status":"product_not_configured","amount":sale["amount"],"currency":sale["currency"],"request_body":payload}).execute()
+        return jsonify({"ok":False,"error":"Produto não configurado","product_id":sale["product_id"]}),422
+    if sale["status"] not in {"paid","completed","approved","succeeded","success","processing"}:
+        r=db.table("api_sales").insert({"external_sale_id":sale["external_sale_id"],"product_id":sale["product_id"],"buyer_user_id":sale["buyer_user_id"],"status":sale["status"],"amount":sale["amount"],"currency":sale["currency"],"request_body":payload}).execute()
+        return jsonify({"ok":True,"paid":False,"sale_id":(r.data or [{}])[0].get("id"),"status":sale["status"]})
+    if not sale["buyer_user_id"]: return jsonify({"ok":False,"error":"Envie discord_user_id/buyer_user_id no POST"}),400
+    raw,k=create_key(product["name"]+" • "+sale["buyer_user_id"],int(product["duration_days"]),sale["buyer_user_id"],sale["product_id"])
+    r=db.table("api_sales").insert({"external_sale_id":sale["external_sale_id"],"product_id":sale["product_id"],"buyer_user_id":sale["buyer_user_id"],"api_key_id":k["id"],"status":"paid","amount":sale["amount"],"currency":sale["currency"],"request_body":payload}).execute()
+    return jsonify({"ok":True,"paid":True,"sale_id":(r.data or [{}])[0].get("id"),"product_id":sale["product_id"],"buyer_user_id":sale["buyer_user_id"],"api_key_id":k["id"],"api_key":raw,"duration_days":product["duration_days"]}),201
+
+@app.get("/admin/login")
+def login():
+    if session.get("admin"): return redirect("/admin")
+    return render_template_string(LOGIN_HTML,error=None)
+@app.post("/admin/login")
+def login_post():
+    user=request.form.get("username",""); pwd=request.form.get("password",""); ok=False
+    if ADMIN_PASSWORD_HASH: ok=check_password_hash(ADMIN_PASSWORD_HASH,pwd)
+    elif ADMIN_PASSWORD: ok=secrets.compare_digest(pwd,ADMIN_PASSWORD)
+    if user==ADMIN_USERNAME and ok: session["admin"]=True; return redirect("/admin")
+    return render_template_string(LOGIN_HTML,error="Usuário ou senha inválidos."),401
+@app.get("/admin/logout")
+def logout(): session.clear(); return redirect("/admin/login")
+def admin(): return session.get("admin") is True
+@app.get("/admin")
+def dashboard():
+    if not admin(): return redirect("/admin/login")
+    keys=db.table("api_keys").select("*").order("created_at",desc=True).execute().data or []
+    products=db.table("api_products").select("*").order("created_at",desc=True).execute().data or []
+    sales=db.table("api_sales").select("*").order("created_at",desc=True).limit(20).execute().data or []
+    return render_template_string(DASHBOARD_HTML,keys=keys,products=products,sales=sales,active_count=sum(valid_key(k) for k in keys),new_key=session.pop("new_key",None))
+@app.post("/admin/keys")
+def admin_key():
+    if not admin(): return redirect("/admin/login")
+    days=max(1,int(request.form.get("days","1"))); label=request.form.get("label","Cliente").strip() or "Cliente"; owner=request.form.get("owner_user_id","").strip() or None
+    mr=request.form.get("max_rooms","").strip(); max_rooms=int(mr) if mr else None
+    if max_rooms==0:max_rooms=None
+    raw,_=create_key(label,days,owner,None,max_rooms); session["new_key"]=raw; return redirect("/admin")
+@app.post("/admin/products")
+def admin_product():
+    if not admin(): return redirect("/admin/login")
+    db.table("api_products").upsert({"product_id":request.form["product_id"].strip(),"name":request.form["name"].strip() or "API","duration_days":max(1,int(request.form["duration_days"])),"active":True},on_conflict="product_id").execute()
+    return redirect("/admin")
+@app.post("/admin/products/<int:pid>/toggle")
+def toggle_product(pid):
+    if not admin(): return redirect("/admin/login")
+    r=db.table("api_products").select("active").eq("id",pid).limit(1).execute(); current=(r.data or [{"active":False}])[0]["active"]
+    db.table("api_products").update({"active":not current}).eq("id",pid).execute(); return redirect("/admin")
+@app.post("/admin/keys/<int:kid>/renew")
+def renew(kid):
+    if not admin(): return redirect("/admin/login")
+    r=db.table("api_keys").select("expires_at").eq("id",kid).limit(1).execute(); row=(r.data or [None])[0]
+    if row:
+        base=now()
+        if row.get("expires_at"):
+            try: base=max(base,datetime.fromisoformat(row["expires_at"].replace("Z","+00:00")))
+            except ValueError: pass
+        db.table("api_keys").update({"expires_at":iso(base+timedelta(days=30)),"active":True}).eq("id",kid).execute()
+    return redirect("/admin")
+@app.post("/admin/keys/<int:kid>/toggle")
+def toggle_key(kid):
+    if not admin(): return redirect("/admin/login")
+    r=db.table("api_keys").select("active").eq("id",kid).limit(1).execute(); current=(r.data or [{"active":False}])[0]["active"]
+    db.table("api_keys").update({"active":not current}).eq("id",kid).execute(); return redirect("/admin")
+@app.post("/admin/keys/<int:kid>/delete")
+def delete_key(kid):
+    if not admin(): return redirect("/admin/login")
+    db.table("api_keys").delete().eq("id",kid).execute(); return redirect("/admin")
+if __name__=="__main__": app.run(host="0.0.0.0",port=int(os.environ.get("PORT","10000")))
