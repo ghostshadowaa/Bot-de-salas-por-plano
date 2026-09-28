@@ -686,24 +686,81 @@ def logout():
 
 
 USER_DASHBOARD_HTML = """
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shadow API • Dashboard</title>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shadow API • Painel</title>
 <style>
-:root{--bg:#070b16;--panel:#0d1426;--line:rgba(148,163,184,.16);--text:#e5eefc;--muted:#93a4bd;--brand:#7c3aed;--cyan:#22d3ee;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial;background:radial-gradient(circle at 20% 0%,rgba(124,58,237,.22),transparent 34%),radial-gradient(circle at 80% 10%,rgba(34,211,238,.12),transparent 28%),var(--bg);color:var(--text)}a{color:inherit;text-decoration:none}
-.shell{display:grid;grid-template-columns:270px 1fr;min-height:100vh}.side{position:sticky;top:0;height:100vh;padding:20px 15px;background:rgba(9,14,27,.96);border-right:1px solid var(--line)}.brand{display:flex;gap:11px;align-items:center;padding:10px 12px 18px;border-bottom:1px solid var(--line)}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),#4f46e5 55%,var(--cyan));display:grid;place-items:center;font-weight:900}.brand small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.nav{margin-top:18px;display:grid;gap:7px}.nav a{padding:12px 13px;border-radius:13px;color:var(--muted);border:1px solid transparent}.nav a:hover,.nav a.active{background:linear-gradient(135deg,rgba(124,58,237,.27),rgba(34,211,238,.08));border-color:rgba(124,58,237,.35);color:var(--text)}.ico{display:inline-block;width:25px}
-.main{padding:24px;min-width:0}.top{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:19px;background:rgba(7,11,22,.76);backdrop-filter:blur(15px)}.title h1{margin:0;font-size:19px}.title p{margin:3px 0 0;color:var(--muted);font-size:13px}.actions{display:flex;gap:9px}.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.04)}.primary{background:linear-gradient(135deg,var(--brand),#4f46e5);border-color:rgba(124,58,237,.5);font-weight:800}.danger{color:#fca5a5;border-color:rgba(239,68,68,.3)}
-.grid{display:grid;gap:15px;margin-top:17px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card,.panel{padding:18px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));box-shadow:0 18px 55px rgba(0,0,0,.28)}.card h3{margin:0;color:var(--muted);font-size:13px}.metric{font-size:30px;font-weight:900;margin-top:8px}.muted{color:var(--muted);line-height:1.55}.two{grid-template-columns:1.25fr .9fr}.head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.head h2{margin:0;font-size:17px}.head p{margin:6px 0 0;color:var(--muted)}.list{display:grid;gap:10px;margin-top:15px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}.row b{display:block}.row span{display:block;color:var(--muted);font-size:12px;margin-top:4px}.tag{padding:6px 9px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap}.ok{background:rgba(34,197,94,.12);color:#86efac}.warn{background:rgba(245,158,11,.12);color:#fcd34d}.lock{background:rgba(239,68,68,.12);color:#fca5a5}.code{margin-top:14px;background:#020617;border:1px solid rgba(34,211,238,.2);border-radius:15px;padding:15px;overflow:auto}.code pre{margin:0;color:#c4b5fd;font-size:12px;line-height:1.7}.empty{text-align:center;padding:25px;color:var(--muted);border:1px dashed var(--line);border-radius:15px}.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}.quick div{padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}.quick b{display:block;margin-bottom:5px}
-@media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}@media(max-width:750px){.shell{display:block}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}.nav{grid-template-columns:repeat(2,1fr)}.main{padding:14px}.cards{grid-template-columns:1fr}.quick{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
-</style></head><body>
-<div class="shell"><aside class="side"><div class="brand"><div class="logo">S</div><div><b>Shadow API</b><small>Área do cliente</small></div></div>
-<nav class="nav"><a class="active" href="/dashboard"><span class="ico">⌂</span>Visão Geral</a><a href="#keys"><span class="ico">◈</span>Minhas API Keys</a><a href="#usage"><span class="ico">◉</span>Uso da API</a><a href="/docs"><span class="ico">▤</span>Documentação</a><a href="/health"><span class="ico">●</span>Status</a></nav>
-<div style="margin-top:20px;padding:13px;border:1px solid var(--line);border-radius:15px"><span class="tag ok">● API ONLINE</span><div class="muted" style="font-size:12px;margin-top:9px">Login protegido pelo Discord</div></div></aside>
-<main class="main"><header class="top"><div class="title"><h1>Dashboard / Visão Geral</h1><p>Gerencie suas credenciais e acompanhe o uso da Shadow API.</p></div><div class="actions"><a class="btn" href="/docs">Documentação</a><a class="btn danger" href="/logout">↪ Sair</a></div></header>
-<div class="grid cards"><div class="card"><h3>Conta Discord</h3><div class="metric">{{ user.get("global_name") or user.get("username") or "Usuário" }}</div><div class="muted">ID: {{ user.get("id","—") }}</div></div><div class="card"><h3>API Keys</h3><div class="metric">{{ keys|length }}</div><div class="muted">Vinculadas à sua conta</div></div><div class="card"><h3>Keys ativas</h3><div class="metric">{{ active_count }}</div><div class="muted">Disponíveis para uso</div></div><div class="card"><h3>Salas utilizadas</h3><div class="metric">{{ rooms_used }}</div><div class="muted">Criações bem-sucedidas</div></div></div>
-<section class="panel" style="margin-top:15px"><div class="head"><div><h2>Bem-vindo ao Shadow API</h2><p>Este é o seu espaço de cliente. Recursos administrativos, gerenciamento global e configurações internas ficam fora desta área.</p></div><span class="tag ok">CLIENTE</span></div><div class="quick"><div><b>🔑 Credencial</b><span class="muted">Use sua API Key no header X-API-Key.</span></div><div><b>🎮 Salas</b><span class="muted">Cada criação aceita pelo provedor custa R$ 0,05.</span></div><div><b>📚 Integração</b><span class="muted">Exemplos prontos em várias linguagens na documentação.</span></div></div></section>
-<div class="grid two"><section class="panel" id="keys"><div class="head"><div><h2>Minhas API Keys</h2><p>Somente chaves vinculadas ao seu Discord aparecem aqui.</p></div><span class="tag warn">{{ keys|length }} cadastradas</span></div>{% if keys %}<div class="list">{% for k in keys %}<div class="row"><div><b>{{ k.label }}</b><span>{{ k.key_prefix }}•••• · Saldo R$ {{ "%.2f"|format((k.balance_cents or 0)/100) }}</span><span>Salas: {{ k.rooms_used or 0 }}{% if k.max_rooms %} / {{ k.max_rooms }}{% else %} / ilimitado{% endif %} · Expira: {{ k.expires_at or "sem expiração" }}</span></div>{% if valid_key(k) %}<span class="tag ok">ATIVA</span>{% else %}<span class="tag lock">INATIVA</span>{% endif %}</div>{% endfor %}</div>{% else %}<div class="empty">Nenhuma API Key vinculada à sua conta ainda.</div>{% endif %}</section>
-<section class="panel" id="usage"><div class="head"><div><h2>Uso da API</h2><p>Resumo do consumo das suas credenciais.</p></div><span class="tag ok">R$ 0,05 / sala</span></div><div class="list"><div class="row"><div><b>Salas criadas</b><span>Total entre suas chaves</span></div><b>{{ rooms_used }}</b></div><div class="row"><div><b>Saldo disponível</b><span>Total das suas chaves</span></div><b>R$ {{ "%.2f"|format((keys|sum(attribute="balance_cents") or 0)/100) }}</b></div><div class="row"><div><b>Endpoint</b><span>POST /v1/rooms</span></div><span class="tag ok">ONLINE</span></div></div><div class="code"><pre>X-API-Key: sk_sua_chave
+:root{--bg:#070b16;--panel:#0d1426;--line:rgba(148,163,184,.16);--text:#e5eefc;--muted:#93a4bd;--brand:#7c3aed;--cyan:#22d3ee;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;--shadow:0 20px 60px rgba(0,0,0,.45);--radius:18px}
+*{box-sizing:border-box}html,body{height:100%;scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(circle at 20% 0%,rgba(124,58,237,.22),transparent 34%),radial-gradient(circle at 80% 10%,rgba(34,211,238,.12),transparent 28%),var(--bg);color:var(--text)}a{color:inherit;text-decoration:none}button{font:inherit}
+.shell{display:grid;grid-template-columns:292px 1fr;min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;padding:22px 16px;background:linear-gradient(180deg,rgba(13,20,38,.96),rgba(9,14,27,.96));border-right:1px solid var(--line);backdrop-filter:blur(14px);z-index:30;overflow:hidden}
+.brand{display:flex;align-items:center;gap:12px;padding:10px 12px 18px;border-bottom:1px solid var(--line)}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),#4f46e5 55%,var(--cyan));box-shadow:0 12px 35px rgba(124,58,237,.35);display:grid;place-items:center;font-weight:900}.brand small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.nav{margin-top:18px;display:grid;gap:8px}.nav a{display:flex;align-items:center;gap:12px;padding:12px 13px;border:1px solid transparent;border-radius:14px;color:var(--muted);transition:.18s}.nav a:hover,.nav a.active{background:linear-gradient(135deg,rgba(124,58,237,.28),rgba(34,211,238,.10));border-color:rgba(124,58,237,.38);color:var(--text)}.icon{width:22px;text-align:center;flex:0 0 auto}
+.side-foot{margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03)}.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 6px rgba(34,197,94,.12)}.pill.ok{color:#86efac;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
+.main{min-width:0;padding:24px}.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border:1px solid var(--line);border-radius:20px;background:rgba(7,11,22,.72);backdrop-filter:blur(16px);box-shadow:0 10px 30px rgba(0,0,0,.20)}.title h1{margin:0;font-size:19px;letter-spacing:-.03em}.title p{margin:3px 0 0;color:var(--muted);font-size:13px}.actions{display:flex;gap:10px}.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:14px;padding:11px 14px;background:rgba(255,255,255,.04);color:var(--text);cursor:pointer}.btn.primary{background:linear-gradient(135deg,var(--brand),#4f46e5);border-color:rgba(124,58,237,.55);box-shadow:0 14px 35px rgba(124,58,237,.24);font-weight:800}.btn.danger{color:#fca5a5;border-color:rgba(239,68,68,.3)}
+.grid{display:grid;gap:16px;margin-top:18px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card,.panel{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));box-shadow:var(--shadow);padding:18px;min-width:0}.card h3{margin:0;color:var(--muted);font-size:13px}.metric{font-size:32px;font-weight:900;margin-top:8px;letter-spacing:-.05em}.muted{color:var(--muted);font-size:13px;line-height:1.55}.two{grid-template-columns:1.25fr .9fr}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.head h2{margin:0;font-size:17px;letter-spacing:-.03em}.head p{margin:6px 0 0;color:var(--muted);line-height:1.55}
+.list{display:grid;gap:11px;margin-top:15px}.row{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}.row b{display:block}.row span{display:block;color:var(--muted);font-size:12px;margin-top:4px}.tag{font-size:11px;font-weight:900;padding:6px 10px;border-radius:999px;white-space:nowrap}.tag.ok{color:#86efac;background:rgba(34,197,94,.12)}.tag.warn{color:#fcd34d;background:rgba(245,158,11,.12)}.tag.lock{color:#fca5a5;background:rgba(239,68,68,.12)}.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed rgba(148,163,184,.26);border-radius:18px;background:rgba(255,255,255,.02)}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}label{font-size:13px;color:#cbd5e1;font-weight:800}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;background:rgba(2,6,23,.48);color:var(--text);padding:12px 13px;outline:none}input:focus,select:focus{border-color:rgba(34,211,238,.55);box-shadow:0 0 0 4px rgba(34,211,238,.1)}.hint{font-size:12px;color:var(--muted)}
+.code{position:relative;margin-top:14px;border:1px solid rgba(34,211,238,.25);background:#020617;border-radius:18px;padding:16px;overflow:auto}.code pre{margin:0;color:#c4b5fd;font-size:12px;line-height:1.7}.code .copy{position:absolute;right:10px;top:10px}.result{margin-top:14px;padding:14px;border-radius:15px;border:1px solid rgba(34,211,238,.22);background:rgba(34,211,238,.05)}.result pre{margin:8px 0 0;white-space:pre-wrap;word-break:break-word;color:#bae6fd;font-size:12px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:25;backdrop-filter:blur(3px)}
+@media(max-width:1150px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}}@media(max-width:860px){.shell{display:block}.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}.nav{grid-template-columns:repeat(2,1fr)}.main{padding:16px}.cards{grid-template-columns:1fr}.form{grid-template-columns:1fr}.field.full{grid-column:auto}.topbar{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions .btn{flex:1}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand"><div class="logo">S</div><div><strong>Shadow API</strong><small>Área do cliente</small></div></div>
+  <nav class="nav">
+    <a class="active" href="/dashboard"><span class="icon">⌂</span>Visão Geral</a>
+    <a href="#keys"><span class="icon">◈</span>Minhas API Keys</a>
+    <a href="#rooms"><span class="icon">◉</span>Salas</a>
+    <a href="#usage"><span class="icon">◌</span>Uso da API</a>
+    <a href="/docs"><span class="icon">▤</span>Documentação</a>
+    <a href="/health"><span class="icon">●</span>Status</a>
+  </nav>
+  <div class="side-foot"><span class="pill ok"><span class="dot"></span> API online</span><div class="muted" style="margin-top:9px;font-size:12px">Login protegido pelo Discord</div></div>
+</aside>
+<main class="main">
+<header class="topbar"><div class="title"><h1>Dashboard / Visão Geral</h1><p>Gerencie suas chaves, crie salas e acompanhe sua operação.</p></div><div class="actions"><a class="btn" href="/docs">Documentação</a><a class="btn danger" href="/logout">↪ Sair</a></div></header>
+
+<div class="grid cards">
+  <div class="card"><h3>Conta Discord</h3><div class="metric">{{ user.get("global_name") or user.get("username") or "Usuário" }}</div><div class="muted">ID: {{ user.get("id","—") }}</div></div>
+  <div class="card"><h3>API Keys</h3><div class="metric">{{ keys|length }}</div><div class="muted">Vinculadas à sua conta</div></div>
+  <div class="card"><h3>Keys ativas</h3><div class="metric">{{ active_count }}</div><div class="muted">Disponíveis para uso</div></div>
+  <div class="card"><h3>Salas utilizadas</h3><div class="metric">{{ rooms_used }}</div><div class="muted">Criações bem-sucedidas</div></div>
+</div>
+
+<section class="panel" style="margin-top:18px"><div class="head"><div><h2>Bem-vindo ao Shadow API</h2><p>Seu painel de cliente com o mesmo visual do painel principal, mas mostrando somente recursos liberados para sua conta.</p></div><span class="tag ok">CLIENTE</span></div>
+<div class="grid" style="grid-template-columns:repeat(3,1fr);margin-top:15px">
+<div class="row"><div><b>🔑 Credencial</b><span>Use X-API-Key no backend.</span></div></div>
+<div class="row"><div><b>🎮 Salas</b><span>Criar salas diretamente pelo painel.</span></div></div>
+<div class="row"><div><b>💳 Consumo</b><span>R$ 0,05 por sala bem-sucedida.</span></div></div>
+</div></section>
+
+<section id="rooms" class="panel" style="margin-top:18px">
+<div class="head"><div><h2>Salas</h2><p>Crie uma sala diretamente pelo painel usando uma das suas API Keys. O token privado da Nix permanece somente no servidor.</p></div><span class="tag ok">NIX ONLINE</span></div>
+{% if not keys %}<div class="empty" style="margin-top:15px">Você ainda não possui uma API Key vinculada à sua conta.</div>{% else %}
+<form class="form" method="post" action="/dashboard/rooms">
+<div class="field"><label>API Key</label><select name="key_id" required>{% for k in keys %}<option value="{{k.id}}" {% if not valid_key(k) %}disabled{% endif %}>{{k.label}} · {{k.key_prefix}}•••• · R$ {{ "%.2f"|format((k.balance_cents or 0)/100) }}{% if not valid_key(k) %} · INATIVA{% endif %}</option>{% endfor %}</select></div>
+<div class="field"><label>Tipo de configuração</label><select name="config_type"><option value="ap_padrao">AP Padrão</option><option value="gelo_inf">Gelo Infinito</option><option value="tatico">Tático</option><option value="ap_fullcapa">AP Full Capa</option><option value="capa_3">Capa 3</option><option value="ap_uxd">AP UXD</option><option value="ap_7r">AP 7R</option><option value="br_padrao">BR Padrão</option></select></div>
+<div class="field"><label>Senha da sala</label><input name="password" value="00" maxlength="20"></div>
+<div class="field"><label>Delay inicial (minutos)</label><input name="start_delay_minutes" type="number" min="1" max="20" value="1" required></div>
+<div class="field"><label>Mapa</label><select name="map_name"><option>Bermuda</option><option>Purgatory</option><option>Kalahari</option><option>Nextera</option><option>Nova Terra</option><option>Solara</option></select></div>
+<div class="field"><label>Nome da sala</label><input name="room_name" value="Shadow Salas" maxlength="80"></div>
+<div class="field full"><button class="btn primary" type="submit">🎮 Criar sala · R$ 0,05</button><div class="hint">O valor só é consumido quando a criação for aceita com sucesso. Em caso de falha, o crédito é devolvido.</div></div>
+</form>
+{% endif %}
+{% if room_result %}<div class="result"><b>{% if room_result.ok %}Sala criada com sucesso{% else %}Falha ao criar sala{% endif %}</b><div class="muted">HTTP {{room_result.status}}</div>{% if room_result.response %}<pre>{{ room_result.response | tojson(indent=2) }}</pre>{% elif room_result.error %}<pre>{{ room_result.error }}</pre>{% endif %}</div>{% endif %}
+</section>
+
+<div class="grid two">
+<section class="panel" id="keys"><div class="head"><div><h2>Minhas API Keys</h2><p>Somente chaves vinculadas ao seu Discord aparecem aqui.</p></div><span class="tag warn">{{ keys|length }} cadastradas</span></div>
+{% if keys %}<div class="list">{% for k in keys %}<div class="row"><div><b>{{k.label}}</b><span>{{k.key_prefix}}•••• · Saldo R$ {{ "%.2f"|format((k.balance_cents or 0)/100) }}</span><span>Salas: {{k.rooms_used or 0}}{% if k.max_rooms %} / {{k.max_rooms}}{% else %} / ilimitado{% endif %} · Expira: {{k.expires_at or "sem expiração"}}</span></div>{% if valid_key(k) %}<span class="tag ok">ATIVA</span>{% else %}<span class="tag lock">INATIVA</span>{% endif %}</div>{% endfor %}</div>{% else %}<div class="empty">Nenhuma API Key vinculada à sua conta ainda.</div>{% endif %}
+</section>
+<section class="panel" id="usage"><div class="head"><div><h2>Uso da API</h2><p>Resumo do consumo das suas credenciais.</p></div><span class="tag ok">R$ 0,05 / sala</span></div>
+<div class="list"><div class="row"><div><b>Salas criadas</b><span>Total entre suas chaves</span></div><b>{{rooms_used}}</b></div><div class="row"><div><b>Saldo disponível</b><span>Total das suas chaves</span></div><b>R$ {{ "%.2f"|format((keys|sum(attribute="balance_cents") or 0)/100) }}</b></div><div class="row"><div><b>Endpoint</b><span>POST /v1/rooms</span></div><span class="tag ok">ONLINE</span></div></div>
+<div class="code"><pre>X-API-Key: sk_sua_chave
 Content-Type: application/json
 
 {
@@ -712,11 +769,100 @@ Content-Type: application/json
   "start_delay_minutes": 1,
   "map_name": "Bermuda",
   "room_name": "Shadow Salas"
-}</pre></div><a class="btn primary" href="/docs" style="margin-top:14px">Abrir documentação completa →</a></section></div>
-<section class="panel"><div class="head"><div><h2>Como começar</h2><p>Fluxo recomendado para integrar sua aplicação.</p></div></div><div class="list"><div class="row"><div><b>1. Obtenha sua API Key</b><span>Use uma chave vinculada ao seu Discord.</span></div><span class="tag ok">API</span></div><div class="row"><div><b>2. Envie X-API-Key</b><span>Mantenha a chave no backend e nunca em frontend público.</span></div><span class="tag warn">SEGURANÇA</span></div><div class="row"><div><b>3. POST /v1/rooms</b><span>A Shadow API faz a comunicação privada com o provedor.</span></div><span class="tag ok">PRONTO</span></div></div></section>
-</main></div></body></html>
+}</pre></div><a class="btn primary" href="/docs" style="margin-top:14px">Abrir documentação completa →</a></section>
+</div>
+
+<section class="panel" style="margin-top:18px"><div class="head"><div><h2>Como começar</h2><p>Use a API Key no backend ou crie salas diretamente por esta tela.</p></div></div>
+<div class="list"><div class="row"><div><b>1. Selecione uma API Key</b><span>Ela precisa estar ativa e ter saldo suficiente.</span></div><span class="tag ok">API</span></div><div class="row"><div><b>2. Configure a sala</b><span>Escolha configuração, mapa, senha e delay.</span></div><span class="tag ok">SALAS</span></div><div class="row"><div><b>3. Crie a sala</b><span>A API encaminha a solicitação ao provedor sem expor o token privado.</span></div><span class="tag warn">R$ 0,05</span></div></div></section>
+</main></div>
+</body></html>
 """
 
+@app.post("/dashboard/rooms")
+def user_create_room():
+    user = discord_user()
+    if not user:
+        return redirect("/login")
+
+    discord_id = str(user.get("id", ""))
+    try:
+        key_id = int(request.form.get("key_id", "0"))
+    except ValueError:
+        return redirect("/dashboard#rooms")
+
+    result = db.table("api_keys").select("*").eq("id", key_id).eq("owner_user_id", discord_id).limit(1).execute()
+    key = (result.data or [None])[0]
+
+    if not key or not valid_key(key):
+        session["room_result"] = {"ok": False, "status": 403, "error": "API Key inválida, expirada ou inativa."}
+        return redirect("/dashboard#rooms")
+
+    if not reserve_room_credit(key["id"]):
+        session["room_result"] = {"ok": False, "status": 402, "error": "Saldo insuficiente. Adicione crédito antes de criar a sala."}
+        return redirect("/dashboard#rooms")
+
+    try:
+        delay = max(1, min(20, int(request.form.get("start_delay_minutes", "1"))))
+    except ValueError:
+        delay = 1
+
+    payload = {
+        "password": request.form.get("password", "00").strip() or "00",
+        "start_delay_minutes": delay,
+        "config_type": request.form.get("config_type", "ap_padrao").strip() or "ap_padrao",
+        "room_name": request.form.get("room_name", "Shadow Salas").strip() or "Shadow Salas",
+        "map_name": request.form.get("map_name", "Bermuda").strip() or "Bermuda",
+    }
+
+    try:
+        upstream = None
+        for attempt in range(1, 5):
+            try:
+                upstream = requests.post(
+                    NIX_ROOMS_URL,
+                    json=payload,
+                    headers={
+                        "Authorization": f"Bearer {NIX_API_TOKEN}",
+                        "Content-Type": "application/json",
+                    },
+                    timeout=15,
+                )
+                if upstream.status_code not in (502, 503, 504, 524) or attempt == 4:
+                    break
+                import time
+                time.sleep(min(5 * attempt, 20))
+            except requests.RequestException:
+                if attempt == 4:
+                    raise
+                import time
+                time.sleep(min(5 * attempt, 20))
+
+        if upstream is None:
+            raise requests.RequestException("no response")
+
+        try:
+            response = upstream.json()
+        except ValueError:
+            response = {"raw": upstream.text[:4000]}
+
+        if 200 <= upstream.status_code < 300:
+            db.table("api_keys").update({
+                "rooms_used": int(key.get("rooms_used") or 0) + 1,
+                "last_used_at": iso(now()),
+            }).eq("id", key["id"]).execute()
+        else:
+            refund_room_credit(key["id"])
+
+        session["room_result"] = {
+            "ok": 200 <= upstream.status_code < 300,
+            "status": upstream.status_code,
+            "response": response,
+        }
+    except requests.RequestException:
+        refund_room_credit(key["id"])
+        session["room_result"] = {"ok": False, "status": 502, "error": "Não foi possível conectar à API da Nix."}
+
+    return redirect("/dashboard#rooms")
 @app.get("/dashboard")
 def user_dashboard():
     user = discord_user()
