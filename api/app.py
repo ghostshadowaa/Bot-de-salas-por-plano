@@ -108,63 +108,116 @@ DASHBOARD_HTML = """
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shadow API • Dashboard</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#08060d;color:#f5f3ff;font-family:Inter,system-ui,Arial}
-.wrap{max-width:1200px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-a{color:#c4b5fd;text-decoration:none}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.card{background:#110d1b;border:1px solid #292033;border-radius:18px;padding:18px;margin:12px 0}.grid>.card{margin:0}
-input,select,button{width:100%;padding:11px 13px;margin-top:8px;border-radius:10px;background:#0b0710;color:#fff;border:1px solid #3a2d48}
-button{background:#7c3aed;border:0;font-weight:800;cursor:pointer}.muted{color:#a49caf}.key{word-break:break-all;color:#c4b5fd;font-family:monospace}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{background:#110d1b;border:1px solid #292033;border-radius:16px;padding:16px}.num{font-size:28px;font-weight:900}
-.item{border-top:1px solid #292033;padding:15px 0}.item:first-child{border-top:0}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions form{flex:1;min-width:110px}.secondary{background:#1b1425}.danger{background:#642236}.success{color:#8ef0b1}.warn{color:#f8d477}
-nav{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 20px}nav a{padding:8px 12px;border:1px solid #30243e;border-radius:9px}
-pre{white-space:pre-wrap;background:#0b0710;border:1px solid #292033;border-radius:12px;padding:14px;overflow:auto}
-@media(max-width:750px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}header{align-items:flex-start;gap:10px}}
-</style></head>
-<body><div class="wrap">
-<header><div><h1>🟣 Shadow API</h1><div class="muted">Dashboard, chaves e documentação</div></div><a href="/admin/logout">Sair</a></header>
-<nav><a href="/admin">Dashboard</a><a href="/docs">Documentação</a><a href="/health">Health</a></nav>
+*{box-sizing:border-box}
+:root{--bg:#07050b;--panel:#100c17;--panel2:#151020;--border:#292035;--text:#f8f7fb;--muted:#9d95aa;--purple:#8b5cf6;--purple2:#6d28d9;--green:#70e0a0;--yellow:#f6d477;--red:#f87171}
+body{margin:0;background:radial-gradient(circle at 15% 0%,#25113e 0,transparent 32%),radial-gradient(circle at 90% 10%,#17102a 0,transparent 28%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+.wrap{max-width:1240px;margin:auto;padding:28px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:13px}.logo{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#6d28d9);box-shadow:0 10px 30px #7c3aed44;font-size:22px}
+h1,h2,h3,p{margin-top:0}.brand h1{font-size:22px;margin:0}.muted{color:var(--muted)}
+.top-actions{display:flex;gap:9px;flex-wrap:wrap}.top-actions a,.nav a{color:#d8ccf7;text-decoration:none;border:1px solid var(--border);background:#0e0a15;padding:9px 13px;border-radius:10px;font-size:14px}.top-actions a:hover,.nav a:hover{border-color:#60448a}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}.nav a.active{background:#24153b;border-color:#7045a5;color:#fff}
+.hero{padding:26px;border:1px solid #352649;border-radius:22px;background:linear-gradient(135deg,#171020cc,#0f0b16dd);box-shadow:0 18px 55px #0005;margin-bottom:18px}.hero h2{font-size:28px;margin-bottom:7px}.hero p{margin-bottom:0;max-width:700px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--panel);}.stat-head{display:flex;justify-content:space-between;align-items:center}.stat-icon{font-size:18px;opacity:.8}.num{font-size:30px;font-weight:900;margin-top:8px}
+.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:18px}.card{background:#100c17e8;border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 10px 35px #0003}.card h2{font-size:18px;margin-bottom:5px}.card .desc{font-size:13px;color:var(--muted);margin-bottom:16px}
+input,select,button{width:100%;padding:12px 13px;margin-top:8px;border-radius:10px;background:#0a0710;color:#fff;border:1px solid #342842;font:inherit}input:focus,select:focus{outline:2px solid #7c3aed55;border-color:#8054b9}button{background:linear-gradient(135deg,var(--purple),var(--purple2));border:0;font-weight:800;cursor:pointer;box-shadow:0 8px 22px #7c3aed2b}button:hover{filter:brightness(1.08)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{grid-column:1/-1}.hint{font-size:12px;color:var(--muted);margin-top:8px}
+pre{white-space:pre-wrap;background:#09070d;border:1px solid var(--border);border-radius:12px;padding:13px;overflow:auto;color:#d9d0eb;font-size:12px}
+.link{display:inline-flex;margin-top:13px;color:#c4b5fd;text-decoration:none;font-weight:700}.link:hover{text-decoration:underline}
+.key-alert{margin:18px 0;padding:18px;border:1px solid #3e6a51;border-radius:16px;background:#0d1a13}.success{color:var(--green)}.key{word-break:break-all;color:#c4b5fd;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#08060d;border:1px solid #26352b;padding:12px;border-radius:10px;margin:10px 0}
+.keys-card{margin-top:18px}.item{padding:17px 0;border-top:1px solid var(--border)}.item:first-child{border-top:0}.item-title{display:flex;justify-content:space-between;gap:10px;align-items:center}.status{font-size:11px;font-weight:900;padding:5px 8px;border-radius:999px}.on{background:#123521;color:var(--green)}.off{background:#342b13;color:var(--yellow)}.meta{display:flex;flex-wrap:wrap;gap:8px 14px;color:var(--muted);font-size:12px;margin:7px 0 10px}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions form{flex:1;min-width:105px}.actions button{background:#1b1425;box-shadow:none}.actions .danger{background:#431c27}.empty{padding:28px;text-align:center;border:1px dashed #3a3045;border-radius:13px;color:var(--muted)}
+.footer{text-align:center;color:#71697b;font-size:12px;padding:25px 0 5px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.wrap{padding:18px}.topbar{align-items:flex-start}.hero h2{font-size:23px}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.item-title{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="topbar">
+  <div class="brand"><div class="logo">S</div><div><h1>Shadow API</h1><div class="muted">Central de gerenciamento</div></div></div>
+  <div class="top-actions"><a href="/docs">Documentação</a><a href="/admin/logout">Sair</a></div>
+</header>
 
-<div class="stats">
-<div class="stat"><div class="muted">Total de chaves</div><div class="num">{{keys|length}}</div></div>
-<div class="stat"><div class="muted">Ativas</div><div class="num">{{active_count}}</div></div>
-<div class="stat"><div class="muted">Salas usadas</div><div class="num">{{rooms_used}}</div></div>
-</div>
+<nav class="nav"><a class="active" href="/admin">Dashboard</a><a href="/docs">API Docs</a><a href="/health">Status</a></nav>
 
-<div class="grid" style="margin-top:16px">
-<div class="card"><h2>Criar API Key</h2><p class="muted">A chave completa aparece somente uma vez.</p>
-<form method="post" action="/admin/keys">
-<input name="label" placeholder="Nome do cliente" required>
-<select name="days"><option value="1">1 dia</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">365 dias</option></select>
-<input name="owner_user_id" placeholder="Discord User ID (opcional)">
-<input name="max_rooms" type="number" min="0" placeholder="Limite de salas — 0 = ilimitado">
-<input name="rate_limit" type="number" min="1" value="30" placeholder="Requests/min">
-<button>Criar API Key</button></form></div>
+<section class="hero">
+  <h2>Olá, Shadow 👋</h2>
+  <p class="muted">Gerencie suas API Keys, acompanhe o uso e mantenha sua API de salas organizada em um só lugar.</p>
+</section>
 
-<div class="card"><h2>Como usar</h2><p class="muted">Endpoint principal para criação de salas.</p>
-<pre>POST /v1/rooms
+<section class="stats">
+  <div class="stat"><div class="stat-head"><span class="muted">Total de chaves</span><span class="stat-icon">🔑</span></div><div class="num">{{keys|length}}</div></div>
+  <div class="stat"><div class="stat-head"><span class="muted">Chaves ativas</span><span class="stat-icon">✓</span></div><div class="num">{{active_count}}</div></div>
+  <div class="stat"><div class="stat-head"><span class="muted">Salas utilizadas</span><span class="stat-icon">◈</span></div><div class="num">{{rooms_used}}</div></div>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <h2>Nova API Key</h2>
+    <p class="desc">Crie uma chave para um cliente ou integração. A chave completa será mostrada somente uma vez.</p>
+    <form method="post" action="/admin/keys">
+      <div class="form-grid">
+        <div class="full"><input name="label" placeholder="Nome do cliente / integração" required></div>
+        <div><select name="days"><option value="1">1 dia</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">365 dias</option></select></div>
+        <div><input name="owner_user_id" placeholder="Discord User ID (opcional)"></div>
+        <div><input name="max_rooms" type="number" min="0" placeholder="Limite de salas"></div>
+        <div><input name="rate_limit" type="number" min="1" value="30" placeholder="Requests/min"></div>
+        <div class="full"><button>+ Criar API Key</button></div>
+      </div>
+      <div class="hint">Limite de salas vazio ou 0 = ilimitado.</div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Comece por aqui</h2>
+    <p class="desc">Integre sua aplicação em poucos passos.</p>
+    <pre>POST /v1/rooms
 X-API-Key: sk_sua_chave
 Content-Type: application/json</pre>
-<a href="/docs">Ver documentação completa →</a></div>
+    <a class="link" href="/docs">Abrir documentação completa →</a>
+  </div>
+</section>
+
+{% if new_key %}
+<section class="key-alert">
+  <h3 class="success">✓ API Key criada com sucesso</h3>
+  <p class="muted">Copie e guarde agora. Por segurança, a chave completa não será exibida novamente.</p>
+  <div class="key">{{new_key}}</div>
+  <button onclick="navigator.clipboard.writeText({{new_key|tojson}})">Copiar chave</button>
+</section>
+{% endif %}
+
+<section class="card keys-card">
+  <div class="item-title"><div><h2>API Keys</h2><p class="desc">Chaves criadas neste painel e seus limites.</p></div><span class="muted">{{keys|length}} cadastradas</span></div>
+  {% for k in keys %}
+  <div class="item">
+    <div class="item-title">
+      <strong>{{k.label}}</strong>
+      {% if k.active %}<span class="status on">ATIVA</span>{% else %}<span class="status off">PAUSADA</span>{% endif %}
+    </div>
+    <div class="meta">
+      <span>ID {{k.id}}</span><span>Dono: {{k.owner_user_id or "—"}}</span><span>Expira: {{k.expires_at or "sem expiração"}}</span>
+      <span>Uso: {{k.rooms_used}}{% if k.max_rooms is not none %} / {{k.max_rooms}} salas{% else %} salas{% endif %}</span><span>{{k.rate_limit_per_minute}} req/min</span>
+    </div>
+    <div class="key">{{k.key_prefix}}••••••••••••••••</div>
+    <div class="actions">
+      <form method="post" action="/admin/keys/{{k.id}}/renew"><button>+30 dias</button></form>
+      <form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{"Pausar" if k.active else "Ativar"}}</button></form>
+      <form method="post" action="/admin/keys/{{k.id}}/delete" onsubmit="return confirm('Excluir esta API Key?')"><button class="danger">Excluir</button></form>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty">Nenhuma API Key criada ainda.<br>Crie a primeira usando o formulário acima.</div>
+  {% endfor %}
+</section>
+
+<div class="footer">Shadow API • Painel administrativo</div>
 </div>
-
-{% if new_key %}<div class="card"><h2 class="success">✓ API Key criada</h2><p class="muted">Guarde esta chave agora. Ela não pode ser recuperada depois.</p><div class="key">{{new_key}}</div><button onclick="navigator.clipboard.writeText({{new_key|tojson}})">Copiar chave</button></div>{% endif %}
-
-<div class="card"><h2>Suas API Keys</h2>
-{% for k in keys %}<div class="item">
-<strong>{{k.label}}</strong> — {% if k.active %}<span class="success">ATIVA</span>{% else %}<span class="warn">PAUSADA</span>{% endif %}
-<div class="muted">ID {{k.id}} · Dono: {{k.owner_user_id or "—"}} · Expira: {{k.expires_at or "sem expiração"}}</div>
-<div class="muted">Uso: {{k.rooms_used}}{% if k.max_rooms is not none %} / {{k.max_rooms}} salas{% else %} salas{% endif %} · Limite: {{k.rate_limit_per_minute}} req/min</div>
-<div class="key">{{k.key_prefix}}••••••••••••••••</div>
-<div class="actions">
-<form method="post" action="/admin/keys/{{k.id}}/renew"><button class="secondary">+30 dias</button></form>
-<form method="post" action="/admin/keys/{{k.id}}/toggle"><button class="secondary">{{"Pausar" if k.active else "Ativar"}}</button></form>
-<form method="post" action="/admin/keys/{{k.id}}/delete" onsubmit="return confirm('Excluir esta API Key?')"><button class="danger">Excluir</button></form>
-</div></div>
-{% else %}<p class="muted">Nenhuma API Key criada.</p>{% endfor %}
-</div></div></body></html>
+</body>
+</html>
 """
 
 DOCS_HTML = """
