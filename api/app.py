@@ -255,7 +255,9 @@ document.querySelectorAll('[data-goto]').forEach(el=>el.addEventListener('click'
 function flash(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(flash.t);flash.t=setTimeout(()=>toast.classList.remove('show'),1800)}
 document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',async()=>{const pre=btn.parentElement.querySelector('pre').innerText;try{await navigator.clipboard.writeText(pre);flash('Copiado para a área de transferência.')}catch{flash('Não foi possível copiar automaticamente.')}}));
 </script></body></html>
-"""DOCS_HTML = """
+"""
+
+DOCS_HTML = """
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shadow API • Documentação</title><style>
 *{box-sizing:border-box}body{margin:0;background:#08060d;color:#f5f3ff;font-family:Inter,system-ui,Arial}.wrap{max-width:1000px;margin:auto;padding:22px}
