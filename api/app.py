@@ -462,6 +462,7 @@ def rooms():
                     time.sleep(min(5 * attempt, 20))
 
         if upstream is None:
+            refund_room_credit(key["id"])
             response = {"error": "Não foi possível conectar à API da Nix"}
             log_event(key["id"], "room_request", 502, payload, response)
             return jsonify(response), 502
