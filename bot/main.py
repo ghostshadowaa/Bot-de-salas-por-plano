@@ -27,23 +27,6 @@ nix = NixAPI()
 worker_started = False
 
 
-class HealthHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(b'{"status":"online","service":"shadow-salas-bot"}')
-
-    def log_message(self, format, *args):
-        return
-
-
-def start_health_server():
-    port = int(os.getenv("PORT", "10000"))
-    server = HTTPServer(("0.0.0.0", port), HealthHandler)
-    server.serve_forever()
-
-
 threading.Thread(target=start_health_server, daemon=True).start()
 
 
