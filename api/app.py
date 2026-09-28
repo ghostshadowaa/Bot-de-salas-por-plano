@@ -23,6 +23,9 @@ NIX_BASE_URL = os.environ.get("NIX_BASE_URL", "https://salas.nixbot.vip").rstrip
 NIX_ROOMS_URL = f"{NIX_BASE_URL}/rooms"
 NIX_AUTH_HEADER = "Authorization"
 NIX_AUTH_PREFIX = "Bearer "
+NIX_PAYMENT_CREATE_URL = os.environ.get("NIX_PAYMENT_CREATE_URL", "")
+NIX_PAYMENT_AUTH_HEADER = os.environ.get("NIX_PAYMENT_AUTH_HEADER", "")
+NIX_PAYMENT_AUTH_VALUE = os.environ.get("NIX_PAYMENT_AUTH_VALUE", "")
 ADMIN_USERNAME = os.environ.get("PANEL_USERNAME", os.environ.get("ADMIN_USERNAME", "Shadow"))
 ADMIN_PASSWORD_HASH = os.environ.get("PANEL_PASSWORD_HASH", os.environ.get("ADMIN_PASSWORD_HASH", ""))
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
@@ -107,13 +110,48 @@ def log_event(key_id, event_type, status_code, payload, response):
     }).execute()
 
 
-def reserve_room_credit(key_id):
+def reserve_room_credit(key_id, owner_user_id=None):
+    if owner_user_id:
+        result = db.rpc("reserve_wallet_credit", {"p_user_id": str(owner_user_id), "p_amount_cents": 5}).execute()
+        return bool(result.data)
     result = db.rpc("reserve_room_credit", {"p_key_id": int(key_id)}).execute()
     return bool(result.data)
 
 
-def refund_room_credit(key_id):
+def refund_room_credit(key_id, owner_user_id=None):
+    if owner_user_id:
+        db.rpc("refund_wallet_credit", {"p_user_id": str(owner_user_id), "p_amount_cents": 5}).execute()
+        return
     db.rpc("refund_room_credit", {"p_key_id": int(key_id)}).execute()
+
+
+def wallet_for_user(user_id):
+    row = db.table("user_wallets").select("*").eq("user_id", str(user_id)).limit(1).execute().data
+    if row:
+        return row[0]
+    db.table("user_wallets").insert({"user_id": str(user_id), "balance_cents": 0}).execute()
+    return {"user_id": str(user_id), "balance_cents": 0}
+
+
+def create_deposit_payment(user_id, amount_cents):
+    if not NIX_PAYMENT_CREATE_URL:
+        raise RuntimeError("Pagamento Pix ainda não configurado no Render.")
+    headers = {"Content-Type": "application/json"}
+    if NIX_PAYMENT_AUTH_HEADER and NIX_PAYMENT_AUTH_VALUE:
+        headers[NIX_PAYMENT_AUTH_HEADER] = NIX_PAYMENT_AUTH_VALUE
+    payload = {
+        "amount": amount_cents,
+        "externalReference": f"shadow:{user_id}:{secrets.token_hex(8)}",
+        "description": "Crédito Shadow API",
+    }
+    response = requests.post(NIX_PAYMENT_CREATE_URL, json=payload, headers=headers, timeout=20)
+    try:
+        data = response.json()
+    except ValueError:
+        data = {"raw": response.text[:4000]}
+    if not 200 <= response.status_code < 300:
+        raise RuntimeError(data.get("error") or data.get("message") or f"HTTP {response.status_code}")
+    return data
 
 
 def find_key_by_raw(raw):
@@ -471,7 +509,7 @@ def rooms():
     # concorrentes criem salas sem saldo. Se a Nix não criar a sala,
     # o valor é devolvido automaticamente.
     try:
-        if not reserve_room_credit(key["id"]):
+        if not reserve_room_credit(key["id"], key.get("owner_user_id")):
             response = {
                 "error": "Saldo insuficiente",
                 "required_cents": 5,
@@ -516,7 +554,7 @@ def rooms():
                     time.sleep(min(5 * attempt, 20))
 
         if upstream is None:
-            refund_room_credit(key["id"])
+            refund_room_credit(key["id"], key.get("owner_user_id"))
             response = {"error": "Não foi possível conectar à API da Nix"}
             log_event(key["id"], "room_request", 502, payload, response)
             return jsonify(response), 502
@@ -728,7 +766,7 @@ USER_DASHBOARD_HTML = """
   <div class="card"><h3>Conta Discord</h3><div class="metric">{{ user.get("global_name") or user.get("username") or "Usuário" }}</div><div class="muted">ID: {{ user.get("id","—") }}</div></div>
   <div class="card"><h3>API Keys</h3><div class="metric">{{ keys|length }}</div><div class="muted">Vinculadas à sua conta</div></div>
   <div class="card"><h3>Keys ativas</h3><div class="metric">{{ active_count }}</div><div class="muted">Disponíveis para uso</div></div>
-  <div class="card"><h3>Salas utilizadas</h3><div class="metric">{{ rooms_used }}</div><div class="muted">Criações bem-sucedidas</div></div>
+  <div class="card"><h3>Salas utilizadas</h3><div class="metric">{{ rooms_used }}</div><div class="muted">Criações bem-sucedidas</div></div><div class="card"><h3>Saldo</h3><div class="metric">R$ {{ "%.2f"|format((wallet.balance_cents or 0)/100) }}</div><div class="muted"><a href="#deposit">Adicionar crédito →</a></div></div>
 </div>
 
 <section class="panel" style="margin-top:18px"><div class="head"><div><h2>Bem-vindo ao Shadow API</h2><p>Seu painel de cliente com o mesmo visual do painel principal, mas mostrando somente recursos liberados para sua conta.</p></div><span class="tag ok">CLIENTE</span></div>
@@ -737,6 +775,18 @@ USER_DASHBOARD_HTML = """
 <div class="row"><div><b>🎮 Salas</b><span>Criar salas diretamente pelo painel.</span></div></div>
 <div class="row"><div><b>💳 Consumo</b><span>R$ 0,05 por sala bem-sucedida.</span></div></div>
 </div></section>
+
+<section id="deposit" class="panel" style="margin-top:18px">
+<div class="head"><div><h2>💰 Adicionar crédito</h2><p>O saldo pertence à sua conta Discord e pode ser usado pelas suas API Keys.</p></div><span class="tag ok">SALDO R$ {{ "%.2f"|format((wallet.balance_cents or 0)/100) }}</span></div>
+<form class="form" method="post" action="/dashboard/deposit">
+<div class="field"><label>Valor do depósito</label><input name="amount" type="number" min="5" max="500" step="0.01" value="10.00" required><div class="hint">Mínimo R$ 5,00 · máximo R$ 500,00.</div></div>
+<div class="field"><label>Pagamento</label><div class="row"><div><b>Pix</b><span>O crédito só será liberado após confirmação do provedor.</span></div><span class="tag warn">AUTOMÁTICO</span></div></div>
+<div class="field full"><button class="btn primary" type="submit">＋ Gerar pagamento Pix</button></div>
+</form>
+{% if deposit_result %}<div class="result"><b>{% if deposit_result.ok %}Pagamento criado{% else %}Não foi possível criar o pagamento{% endif %}</b>{% if deposit_result.error %}<pre>{{deposit_result.error}}</pre>{% elif deposit_result.payment %}<pre>{{deposit_result.payment|tojson(indent=2)}}</pre>{% endif %}</div>{% endif %}
+<div class="list"><div class="row"><div><b>Histórico de crédito</b><span>Depósitos, cobranças e estornos da sua carteira.</span></div><span class="tag ok">{{transactions|length}} registros</span></div>
+{% for t in transactions[:8] %}<div class="row"><div><b>{{t.type|replace("_"," ")|title}}</b><span>{{t.created_at}}</span></div><strong>{% if t.amount_cents >= 0 %}+{% endif %}R$ {{ "%.2f"|format((t.amount_cents or 0)/100) }}</strong></div>{% endfor %}</div>
+</section>
 
 <section id="rooms" class="panel" style="margin-top:18px">
 <div class="head"><div><h2>Salas</h2><p>Crie uma sala diretamente pelo painel usando uma das suas API Keys. O token privado da Nix permanece somente no servidor.</p></div><span class="tag ok">NIX ONLINE</span></div>
@@ -863,6 +913,26 @@ def user_create_room():
         session["room_result"] = {"ok": False, "status": 502, "error": "Não foi possível conectar à API da Nix."}
 
     return redirect("/dashboard#rooms")
+@app.post("/dashboard/deposit")
+def user_deposit():
+    user = discord_user()
+    if not user:
+        return redirect("/login")
+    try:
+        amount_cents = int(round(float(request.form.get("amount", "0").replace(",", ".")) * 100))
+    except ValueError:
+        amount_cents = 0
+    if amount_cents < 500 or amount_cents > 50000:
+        session["deposit_result"] = {"ok": False, "error": "Escolha um valor entre R$ 5,00 e R$ 500,00."}
+        return redirect("/dashboard#deposit")
+    try:
+        data = create_deposit_payment(str(user["id"]), amount_cents)
+        session["deposit_result"] = {"ok": True, "payment": data}
+    except (requests.RequestException, RuntimeError) as exc:
+        session["deposit_result"] = {"ok": False, "error": str(exc)}
+    return redirect("/dashboard#deposit")
+
+
 @app.get("/dashboard")
 def user_dashboard():
     user = discord_user()
@@ -872,7 +942,18 @@ def user_dashboard():
     keys = db.table("api_keys").select("*").eq("owner_user_id", discord_id).order("created_at", desc=True).execute().data or []
     active_count = sum(1 for item in keys if valid_key(item))
     rooms_used = sum(int(item.get("rooms_used") or 0) for item in keys)
-    return render_template_string(USER_DASHBOARD_HTML, user=user, keys=keys, active_count=active_count, rooms_used=rooms_used)
+    wallet = wallet_for_user(discord_id)
+    transactions = db.table("wallet_transactions").select("*").eq("user_id", discord_id).order("created_at", desc=True).limit(20).execute().data or []
+    return render_template_string(
+        USER_DASHBOARD_HTML,
+        user=user,
+        keys=keys,
+        active_count=active_count,
+        rooms_used=rooms_used,
+        wallet=wallet,
+        transactions=transactions,
+        deposit_result=session.pop("deposit_result", None),
+    )
 
 @app.get("/admin")
 def dashboard():
