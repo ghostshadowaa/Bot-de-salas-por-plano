@@ -177,149 +177,85 @@ DASHBOARD_HTML = """
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shadow API • Dashboard</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shadow API • Painel</title>
 <style>
-*{box-sizing:border-box}
-:root{--bg:#08070c;--panel:#0f0d15;--panel2:#14101d;--line:#26212f;--text:#f7f5fb;--muted:#9891a5;--purple:#8b5cf6;--purple2:#6d28d9;--green:#55d98b;--yellow:#e8c76b;--red:#ef6b78}
-html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-.app{min-height:100vh;display:flex}.sidebar{position:fixed;left:0;top:0;bottom:0;width:248px;background:#0b0910;border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;z-index:5}
-.brand{display:flex;align-items:center;gap:11px;padding:4px 8px 24px}.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#a78bfa,#6d28d9);display:grid;place-items:center;font-weight:900;font-size:19px;box-shadow:0 10px 30px #7c3aed33}.brand strong{font-size:16px}.brand span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
-.section-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#655e70;font-weight:800;padding:14px 10px 7px}.side-nav{display:grid;gap:3px}.side-nav a{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:9px;color:#aaa3b5;text-decoration:none;font-size:13px}.side-nav a:hover,.side-nav a.active{background:#181220;color:#fff}.side-nav a.active{box-shadow:inset 2px 0 var(--purple)}.ico{width:19px;text-align:center;opacity:.85}
-.side-bottom{margin-top:auto;border-top:1px solid var(--line);padding-top:14px}.account{display:flex;align-items:center;gap:9px;padding:9px}.avatar{width:30px;height:30px;border-radius:9px;background:#21162f;display:grid;place-items:center;color:#c4b5fd;font-weight:800}.account small{display:block;color:var(--muted);font-size:10px}.logout{margin-left:auto;color:#777080;text-decoration:none;font-size:12px}
-.main{margin-left:248px;width:calc(100% - 248px);min-width:0}.top{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 34px;background:#0b0910cc;backdrop-filter:blur(12px);position:sticky;top:0;z-index:4}.crumb{font-size:13px;color:var(--muted)}.crumb b{color:#eee}.top-links{display:flex;gap:8px}.top-links a{color:#aaa3b5;text-decoration:none;font-size:12px;border:1px solid var(--line);padding:8px 11px;border-radius:8px}.top-links a:hover{color:#fff;border-color:#443552}
-.content{max-width:1180px;margin:auto;padding:32px}.eyebrow{color:#a78bfa;font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;margin-bottom:8px}.title-row{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:24px}.title-row h1{font-size:29px;margin:0 0 7px;letter-spacing:-.03em}.title-row p{margin:0;color:var(--muted);font-size:13px}.status-pill{display:flex;align-items:center;gap:7px;border:1px solid #254332;background:#0c1711;color:#83dda5;border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800}.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px}.stat-top{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.stat-icon{color:#bba1ee}.num{font-size:27px;font-weight:850;margin-top:13px;letter-spacing:-.03em}.stat-foot{font-size:10px;color:#625b6c;margin-top:5px}
-.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}.card h2{font-size:15px;margin:0 0 5px}.desc{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 16px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}input,select,button{width:100%;min-height:42px;padding:10px 12px;border-radius:9px;background:#0a080e;color:#fff;border:1px solid #2c2635;font:inherit;font-size:12px}input:focus,select:focus{outline:none;border-color:#7952ad;box-shadow:0 0 0 3px #7c3aed18}button{background:linear-gradient(135deg,var(--purple),var(--purple2));border:0;font-weight:800;cursor:pointer}button:hover{filter:brightness(1.08)}.full{grid-column:1/-1}.hint{font-size:10px;color:#696273;margin-top:9px}
-.endpoint{background:#0a080e;border:1px solid var(--line);border-radius:10px;padding:13px}.method{color:#9f7aea;font-weight:900;font-size:10px;margin-right:7px}.endpoint strong{font-family:ui-monospace,monospace;font-size:12px}.endpoint p{font-size:11px;color:var(--muted);margin:8px 0 0}.code{margin-top:10px;background:#08070b;border:1px solid var(--line);border-radius:9px;padding:11px;font:11px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;color:#cfc7da;white-space:pre-wrap}.link{display:inline-block;color:#c4b5fd;text-decoration:none;font-size:11px;font-weight:700;margin-top:12px}.link:hover{text-decoration:underline}
-.full-card{margin-top:16px}.list-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}.count{color:#70697a;font-size:10px;white-space:nowrap}.item{border-top:1px solid var(--line);padding:15px 0}.item:first-child{margin-top:4px}.item-title{display:flex;justify-content:space-between;gap:12px;align-items:center}.item-title strong{font-size:13px}.meta{display:flex;flex-wrap:wrap;gap:6px 14px;color:#777080;font-size:10px;margin-top:7px}.status{font-size:9px;font-weight:900;padding:4px 7px;border-radius:999px}.on{background:#102218;color:#63d992;border:1px solid #1d4930}.off{background:#211c10;color:var(--yellow);border:1px solid #4a3e20}.key-preview{font:10px ui-monospace,monospace;color:#81768e;margin-top:9px}.actions{display:flex;gap:7px;margin-top:10px}.actions form{flex:1}.actions button{background:#17121d;box-shadow:none;min-height:34px;padding:7px;font-size:10px}.actions .danger{color:#f49aa3;background:#211016}
-.empty{padding:28px 15px;text-align:center;color:#6f6878;font-size:11px;border:1px dashed #302a38;border-radius:10px}.key-alert{margin-top:16px;padding:17px;border:1px solid #275339;border-radius:13px;background:#0b1710}.success{color:#72e0a0;font-size:13px}.secret{font:11px ui-monospace,monospace;word-break:break-all;color:#c4b5fd;background:#08070b;border:1px solid #26352b;padding:11px;border-radius:8px;margin:10px 0}.copy{max-width:150px}
-.module{margin-top:16px}.module-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.module-box{border:1px solid var(--line);background:#0c0a10;border-radius:10px;padding:13px}.module-box b{font-size:11px}.module-box span{display:block;color:#66606d;font-size:10px;margin-top:4px}.locked{border-color:#332744}.lock-head{display:flex;justify-content:space-between;align-items:flex-start}.lock-icon{font-size:22px}.lock-note{color:#71697c;font-size:10px;margin-top:12px}
-.footer{text-align:center;color:#4f4857;font-size:10px;padding:25px}
-@media(max-width:900px){.sidebar{width:205px}.main{margin-left:205px;width:calc(100% - 205px)}.grid{grid-template-columns:1fr}.content{padding:24px}.top{padding:0 24px}}
-@media(max-width:680px){.sidebar{position:relative;width:100%;height:auto;bottom:auto;border-right:0;border-bottom:1px solid var(--line);padding:12px}.app{display:block}.main{margin:0;width:100%}.side-nav{grid-template-columns:repeat(3,1fr)}.side-bottom{display:none}.section-label{display:none}.brand{padding:4px 6px 10px}.top{position:relative;height:56px;padding:0 16px}.top-links a:first-child{display:none}.content{padding:20px 14px}.stats{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.title-row{align-items:flex-start;flex-direction:column}.module-grid{grid-template-columns:1fr}}
-</style>
-</head>
+:root{--bg:#070b16;--panel:#0d1426;--panel2:#101a31;--line:rgba(148,163,184,.16);--text:#e5eefc;--muted:#93a4bd;--brand:#7c3aed;--brand2:#22d3ee;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;--shadow:0 20px 60px rgba(0,0,0,.45);--radius:18px}
+*{box-sizing:border-box}html,body{height:100%;scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(circle at 20% 0%,rgba(124,58,237,.22),transparent 34%),radial-gradient(circle at 80% 10%,rgba(34,211,238,.12),transparent 28%),var(--bg);color:var(--text)}a{color:inherit;text-decoration:none}button{font:inherit}
+.shell{display:grid;grid-template-columns:292px 1fr;min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;padding:22px 16px;background:linear-gradient(180deg,rgba(13,20,38,.96),rgba(9,14,27,.96));border-right:1px solid var(--line);backdrop-filter:blur(14px);z-index:30;transition:.25s;overflow:hidden}
+.brand{display:flex;align-items:center;gap:12px;padding:10px 12px 18px;border-bottom:1px solid var(--line)}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),#4f46e5 55%,var(--brand2));box-shadow:0 12px 35px rgba(124,58,237,.35);display:grid;place-items:center;font-weight:900;letter-spacing:-.06em}.brand small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.nav{margin-top:18px;display:grid;gap:8px}.nav button,.nav a{width:100%;display:flex;align-items:center;gap:12px;padding:12px 13px;border:1px solid transparent;border-radius:14px;background:transparent;color:var(--muted);cursor:pointer;text-align:left;transition:.18s}.nav button:hover,.nav a:hover{background:rgba(148,163,184,.08);color:var(--text)}.nav .active{background:linear-gradient(135deg,rgba(124,58,237,.28),rgba(34,211,238,.10));border-color:rgba(124,58,237,.38);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}.icon{width:22px;height:22px;display:grid;place-items:center;flex:0 0 auto}.label{white-space:nowrap}.side-foot{margin-top:auto;padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03)}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 6px rgba(34,197,94,.12)}.pill.ok{color:#86efac;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
+.main{min-width:0;padding:24px;position:relative}.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border:1px solid var(--line);border-radius:20px;background:rgba(7,11,22,.72);backdrop-filter:blur(16px);box-shadow:0 10px 30px rgba(0,0,0,.20)}.left{display:flex;align-items:center;gap:12px;min-width:0}.hamburger{width:42px;height:42px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.04);color:var(--text);cursor:pointer;display:grid;place-items:center}.title{min-width:0}.title h1{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.title p{margin:2px 0 0;color:var(--muted);font-size:13px}.actions{display:flex;gap:10px;align-items:center}.btn{border:1px solid var(--line);border-radius:14px;padding:11px 14px;background:rgba(255,255,255,.04);color:var(--text);cursor:pointer}.btn.primary{background:linear-gradient(135deg,var(--brand),#4f46e5);border-color:rgba(124,58,237,.55);font-weight:800}
+.grid{display:grid;gap:16px;margin-top:18px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card,.panel{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));box-shadow:var(--shadow);padding:18px;min-width:0}.card h3{margin:0;color:var(--muted);font-size:13px}.metric{font-size:34px;font-weight:900;margin-top:8px;letter-spacing:-.05em}.sub{color:var(--muted);font-size:13px;margin-top:6px}.two{grid-template-columns:1.35fr .85fr}.section{display:none;animation:fade .22s ease}.section.active{display:block}@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}.panel h2{margin:0;font-size:17px}.panel p{margin:6px 0 0;color:var(--muted);line-height:1.55}.form{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}label{font-size:13px;color:#cbd5e1;font-weight:800}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;background:rgba(2,6,23,.42);color:var(--text);padding:12px 13px;outline:none}.hint{font-size:12px;color:var(--muted)}
+.code{position:relative;margin-top:14px;border:1px solid rgba(34,211,238,.25);background:#020617;border-radius:18px;padding:16px;overflow:auto}.code pre{margin:0;color:#c4b5fd;font-size:13px;line-height:1.7}.copy{position:absolute;right:12px;top:12px}
+.list{display:grid;gap:12px}.row{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}.row b{display:block}.row span{color:var(--muted);font-size:13px}.tag{font-size:12px;font-weight:900;padding:6px 10px;border-radius:999px}.tag.ok{color:#86efac;background:rgba(34,197,94,.12)}.tag.warn{color:#fcd34d;background:rgba(245,158,11,.12)}.tag.lock{color:#fca5a5;background:rgba(239,68,68,.12)}.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed rgba(148,163,184,.26);border-radius:18px;background:rgba(255,255,255,.02)}
+.toast{position:fixed;right:20px;bottom:20px;z-index:80;padding:12px 14px;border-radius:14px;background:#0f172a;border:1px solid rgba(34,197,94,.35);color:#bbf7d0;box-shadow:var(--shadow);opacity:0;transform:translateY(12px);pointer-events:none;transition:.25s}.toast.show{opacity:1;transform:none}.shell.collapsed .sidebar{width:92px}.shell.collapsed .label,.shell.collapsed .brand small,.shell.collapsed .side-foot{display:none}.shell.collapsed .nav button,.shell.collapsed .nav a{justify-content:center;padding:12px}.shell.collapsed .brand{justify-content:center;padding-bottom:14px}
+@media(max-width:1150px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}}@media(max-width:860px){.shell{grid-template-columns:1fr}.sidebar{position:fixed;left:0;transform:translateX(-105%);width:292px}.shell.mobile-open .sidebar{transform:none}.shell.collapsed .sidebar{width:292px}.shell.collapsed .label,.shell.collapsed .brand small,.shell.collapsed .side-foot{display:block}.shell.collapsed .nav button,.shell.collapsed .nav a{justify-content:flex-start}.overlay.show{display:block}.main{padding:16px}.actions .btn:not(.primary){display:none}.cards{grid-template-columns:1fr}.form{grid-template-columns:1fr}.topbar{align-items:flex-start}.title p{display:none}}.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:25;backdrop-filter:blur(3px)}
+</style></head>
 <body>
-<div class="app">
-<aside class="sidebar">
-  <div class="brand"><div class="logo">S</div><div><strong>Shadow API</strong><span>Central de gerenciamento</span></div></div>
-  <div class="section-label">Principal</div>
-  <nav class="side-nav">
-    <a class="active" href="/admin"><span class="ico">⌂</span>Visão Geral</a>
-    <a href="#api"><span class="ico">◈</span>API</a>
-    <a href="#bot"><span class="ico">◆</span>Bot</a>
-    <a href="#hosting"><span class="ico">▣</span>Hospedagem de Bots <span style="margin-left:auto">🔒</span></a><a href="#mediador"><span class="ico">♢</span>Auto Mediador <span style="margin-left:auto">🔒</span></a>
-  </nav>
-  <div class="section-label">Recursos</div>
-  <nav class="side-nav">
-    <a href="/docs"><span class="ico">▤</span>Documentação</a>
-    <a href="/health"><span class="ico">●</span>Status</a>
-  </nav>
-  <div class="side-bottom">
-    <div class="account"><div class="avatar">S</div><div><b style="font-size:11px">Shadow</b><small>Administrador</small></div><a class="logout" href="/admin/logout">Sair</a></div>
-  </div>
-</aside>
+<div class="overlay" id="overlay"></div><div class="shell" id="shell">
+<aside class="sidebar"><div class="brand"><div class="logo">S</div><div><strong>Shadow API</strong><small>Central de gerenciamento</small></div></div>
+<nav class="nav">
+<button class="active" data-target="overview"><span class="icon">⌂</span><span class="label">Visão Geral</span></button>
+<button data-target="api"><span class="icon">◈</span><span class="label">API</span></button>
+<button data-target="bot"><span class="icon">◆</span><span class="label">Bot</span></button>
+<button data-target="hosting"><span class="icon">▣</span><span class="label">Hospedagem de Bots 🔒</span></button>
+<button data-target="mediator"><span class="icon">♢</span><span class="label">Auto Mediador 🔒</span></button>
+<button data-target="docs"><span class="icon">▤</span><span class="label">Documentação</span></button>
+<button data-target="status"><span class="icon">●</span><span class="label">Status</span></button></nav>
+<div class="side-foot"><span class="pill ok"><span class="dot"></span> API online</span></div></aside>
+<main class="main"><header class="topbar"><div class="left"><button class="hamburger" id="hamburger">☰</button><div class="title"><h1 id="pageTitle">Painel / Visão Geral</h1><p>Gerencie suas chaves e acompanhe a operação da Shadow API.</p></div></div><div class="actions"><a class="btn" href="/health">Status</a><button class="btn primary" data-goto="api">+ Nova API Key</button></div></header>
+<div class="grid">
+<section id="overview" class="section active"><div class="grid cards">
+<div class="card"><h3>Serviço operacional</h3><div class="metric">Online</div><div class="sub">API respondendo normalmente</div></div>
+<div class="card"><h3>Total de chaves</h3><div class="metric">{{keys|length}}</div><div class="sub">Chaves cadastradas</div></div>
+<div class="card"><h3>Chaves ativas</h3><div class="metric">{{active_count}}</div><div class="sub">Prontas para requisições</div></div>
+<div class="card"><h3>Salas utilizadas</h3><div class="metric">{{rooms_used}}</div><div class="sub">Cada sala bem-sucedida custa R$ 0,05</div></div></div>
+<div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Integração rápida</h2><p>Sua aplicação usa a Shadow API. O token privado da Nix nunca é enviado ao cliente.</p></div><button class="btn" data-goto="docs">Documentação →</button></div><div class="code"><button class="btn copy" data-copy>Copiar</button><pre>POST /v1/rooms
+X-API-Key: sk_sua_chave
+Content-Type: application/json</pre></div></div>
+<div class="panel"><div class="panel-head"><div><h2>Entregas recebidas</h2><p>Vendas e webhooks recebidos pela API.</p></div><span class="tag ok">{{deliveries|length}} recentes</span></div>{% if deliveries %}<div class="list">{% for d in deliveries[:3] %}<div class="row"><div><b>{{d.external_username or d.external_user_id or "Cliente não informado"}}</b><span>Venda: {{d.external_sale_id or "—"}} · {{d.product_name or "—"}}</span></div><span class="tag ok">Recebida</span></div>{% endfor %}</div>{% else %}<div class="empty">Nenhuma entrega recebida ainda.</div>{% endif %}</div></div></section>
 
-<main class="main">
-<header class="top"><div class="crumb">Painel / <b>Visão Geral</b></div><div class="top-links"><a href="/docs">Documentação ↗</a><a href="/health">● API online</a></div></header>
-<div class="content">
+<section id="api" class="section"><div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Criar nova API Key</h2><p>Crie uma credencial para um cliente ou integração. A chave completa será exibida apenas uma vez.</p></div></div>
+<form class="form" method="post" action="/admin/keys"><div class="field full"><label>Nome do cliente ou integração</label><input name="label" placeholder="Ex.: app-mobile, gateway-pagamentos, bot-discord" required></div><div class="field"><label>Validade</label><select name="days"><option value="1">1 dia</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">365 dias</option></select></div><div class="field"><label>Discord User ID — opcional</label><input name="owner_user_id" placeholder="123456789012345678"></div><div class="field"><label>Limite de salas</label><input name="max_rooms" type="number" min="0" placeholder="Ilimitado"></div><div class="field"><label>Requests por minuto</label><input name="rate_limit" type="number" min="1" value="30"></div><div class="field full"><button class="btn primary" type="submit">+ Criar API Key</button></div></form><div class="hint">Deixe o limite de salas vazio ou 0 para permitir uso ilimitado.</div></div>
+<div class="panel"><div class="panel-head"><div><h2>Chaves cadastradas</h2><p>Gerencie limites, status e revogação.</p></div><span class="tag warn">{{keys|length}} cadastradas</span></div><div class="list">{% for k in keys[:6] %}<div class="row"><div><b>{{k.label}}</b><span>{{k.key_prefix}}•••• · Saldo R$ {{\\"%.2f\\"|format((k.balance_cents or 0)/100)}}</span></div>{% if k.active %}<span class="tag ok">Ativa</span>{% else %}<span class="tag lock">Pausada</span>{% endif %}</div>{% else %}<div class="empty">Nenhuma API Key criada ainda.</div>{% endfor %}</div></div></div>
+{% if new_key %}<div class="panel" style="margin-top:16px;border-color:rgba(34,197,94,.35)"><h2 style="margin:0;color:#86efac">✓ API Key criada com sucesso</h2><p>Guarde esta chave agora. Ela não será exibida novamente.</p><div class="code"><pre>{{new_key}}</pre></div><button class="btn primary" onclick="navigator.clipboard.writeText({{new_key|tojson}});flash('Chave copiada!')">Copiar chave</button></div>{% endif %}</section>
 
-<div class="title-row">
-  <div><div class="eyebrow">Shadow API</div><h1>Visão geral</h1><p>Gerencie suas chaves, créditos e integrações em um só lugar.</p></div>
-  <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><a href="#api" style="color:#fff;text-decoration:none;background:linear-gradient(135deg,var(--purple),var(--purple2));padding:9px 13px;border-radius:9px;font-size:11px;font-weight:800">+ Nova API Key</a><div class="status-pill"><span class="dot"></span> Serviço operacional</div></div>
-</div>
+<section id="bot" class="section"><div class="panel"><div class="panel-head"><div><h2>Bot</h2><p>Estrutura preparada para integrar os recursos do Bot da Nix ao Shadow Panel.</p></div><span class="tag warn">EM PREPARAÇÃO</span></div><div class="list"><div class="row"><div><b>Visão Geral</b><span>Indicadores e atividade do bot</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Seu Bot</b><span>Gerenciamento e integração</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Configurações</b><span>Preferências do servidor</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Membros</b><span>Dados e gerenciamento</span></div><span class="tag ok">Planejado</span></div></div></div></section>
 
-<section class="stats">
-  <div class="stat"><div class="stat-top"><span>Total de chaves</span><span class="stat-icon">🔑</span></div><div class="num">{{keys|length}}</div><div class="stat-foot">Chaves cadastradas</div></div>
-  <div class="stat"><div class="stat-top"><span>Chaves ativas</span><span class="stat-icon">✓</span></div><div class="num">{{active_count}}</div><div class="stat-foot">Prontas para requisições</div></div>
-  <div class="stat"><div class="stat-top"><span>Salas utilizadas</span><span class="stat-icon">◈</span></div><div class="num">{{rooms_used}}</div><div class="stat-foot">Cada sala bem-sucedida custa R$ 0,05</div></div>
-  <div class="stat"><div class="stat-top"><span>Saldo total</span><span class="stat-icon">R$</span></div><div class="num">R$ {{"%.2f"|format(total_balance_cents / 100)}}</div><div class="stat-foot">Créditos disponíveis nas keys</div></div>
-</section>
+<section id="hosting" class="section"><div class="panel"><div class="panel-head"><div><h2>Hospedagem de Bots</h2><p>Este módulo está reservado para uma futura etapa do Shadow Panel.</p></div><span class="tag lock">INDISPONÍVEL 🔒</span></div><div class="list"><div class="row"><div><b>Criar hospedagem</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div><div class="row"><div><b>Seus bots</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div><div class="row"><div><b>Planos</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div></div></div></section>
 
-<section class="grid">
-<div class="card" id="api">
-  <h2>Criar nova API Key</h2><p class="desc">Crie uma credencial para um cliente ou integração. A chave completa será exibida apenas uma vez.</p>
-  <form method="post" action="/admin/keys">
-    <div class="form-grid">
-      <div class="full"><input name="label" placeholder="Nome do cliente ou integração" required></div>
-      <div><select name="days"><option value="1">1 dia</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">365 dias</option></select></div>
-      <div><input name="owner_user_id" placeholder="Discord User ID (opcional)"></div>
-      <div><input name="max_rooms" type="number" min="0" placeholder="Limite de salas"></div>
-      <div><input name="rate_limit" type="number" min="1" value="30" placeholder="Requests por minuto"></div>
-      <div class="full"><button>+ Criar API Key</button></div>
-    </div>
-  </form>
-  <div class="hint">Deixe o limite de salas vazio ou 0 para permitir uso ilimitado.</div>
-</div>
+<section id="mediator" class="section"><div class="panel"><div class="panel-head"><div><h2>Auto Mediador</h2><p>Este módulo permanece bloqueado enquanto a integração dos recursos da Nix está sendo construída.</p></div><span class="tag lock">INDISPONÍVEL 🔒</span></div><div class="list"><div class="row"><div><b>Visão Geral</b><span>Resumo do módulo</span></div><span class="tag warn">Em desenvolvimento</span></div><div class="row"><div><b>Como Funciona</b><span>Fluxo de mediação</span></div><span class="tag warn">Em desenvolvimento</span></div><div class="row"><div><b>Estatísticas</b><span>Métricas de uso</span></div><span class="tag warn">Em desenvolvimento</span></div></div></div></section>
 
-<div class="card">
-  <h2>Integração rápida</h2><p class="desc">Sua aplicação usa a Shadow API. O token privado da Nix nunca é enviado ao cliente.</p>
-  <div class="endpoint"><span class="method">POST</span><strong>/v1/rooms</strong><p>Autenticação por <b>X-API-Key</b></p><div class="code">X-API-Key: sk_sua_chave
-Content-Type: application/json</div></div>
-  <a class="link" href="/docs">Ver documentação completa →</a>
-</div>
-</section>
+<section id="docs" class="section"><div class="panel"><div class="panel-head"><div><h2>Documentação</h2><p>Referência rápida para autenticação e criação de salas.</p></div><span class="pill ok"><span class="dot"></span> Online</span></div><div class="code"><button class="btn copy" data-copy>Copiar</button><pre>POST /v1/rooms
+X-API-Key: sk_sua_chave
+Content-Type: application/json
 
-{% if new_key %}
-<section class="key-alert">
-  <div class="success">✓ API Key criada com sucesso</div>
-  <p class="desc" style="margin-top:6px">Guarde esta chave agora. Por segurança, ela não será exibida novamente.</p>
-  <div class="secret">{{new_key}}</div>
-  <button class="copy" onclick="navigator.clipboard.writeText({{new_key|tojson}})">Copiar chave</button>
-</section>
-{% endif %}
+{
+  "config_type": "ap_padrao",
+  "password": "00",
+  "start_delay_minutes": 1,
+  "map_name": "Bermuda",
+  "room_name": "Shadow Salas"
+}</pre></div><p class="sub">Cada criação de sala bem-sucedida consome R$ 0,05 do saldo da API Key.</p></div></section>
 
-<section class="card full-card" id="bot">
-  <div class="list-head"><div><h2>Bot</h2><p class="desc">Estrutura preparada para integrar os recursos do Bot da Nix ao Shadow Panel.</p></div><span class="count">EM PREPARAÇÃO</span></div>
-  <div class="module-grid">
-    <div class="module-box"><b>Visão Geral</b><span>Indicadores e atividade do bot</span></div>
-    <div class="module-box"><b>Seu Bot</b><span>Gerenciamento e integração</span></div>
-    <div class="module-box"><b>Configurações</b><span>Preferências do servidor</span></div>
-    <div class="module-box"><b>Membros</b><span>Dados e gerenciamento</span></div>
-  </div>
-</section>
-
-<section class="card full-card locked" id="hosting"><div class="lock-head"><div><h2>Hospedagem de Bots <span class="status off">INDISPONÍVEL</span></h2><p class="desc">Este módulo está reservado para uma futura etapa do Shadow Panel.</p></div><div class="lock-icon">🔒</div></div><div class="module-grid"><div class="module-box"><b>Criar hospedagem</b><span>Indisponível</span></div><div class="module-box"><b>Seus bots</b><span>Indisponível</span></div><div class="module-box"><b>Planos</b><span>Indisponível</span></div><div class="module-box"><b>Recursos</b><span>Indisponível</span></div></div></section>
-
-<section class="card full-card locked" id="mediador">
-  <div class="lock-head"><div><h2>Auto Mediador <span class="status off">INDISPONÍVEL</span></h2><p class="desc">Este módulo permanece bloqueado enquanto a integração dos recursos da Nix está sendo construída.</p></div><div class="lock-icon">🔒</div></div>
-  <div class="module-grid">
-    <div class="module-box"><b>Visão Geral</b><span>Em desenvolvimento</span></div>
-    <div class="module-box"><b>Como Funciona</b><span>Em desenvolvimento</span></div>
-    <div class="module-box"><b>Estatísticas</b><span>Em desenvolvimento</span></div>
-    <div class="module-box"><b>Meus Códigos</b><span>Em desenvolvimento</span></div>
-  </div>
-</section>
-
-<section class="card full-card">
-  <div class="list-head"><div><h2>Entregas recebidas</h2><p class="desc">Vendas e webhooks recebidos pela API.</p></div><span class="count">{{deliveries|length}} recentes</span></div>
-  {% for d in deliveries %}
-  <div class="item"><div class="item-title"><strong>{{d.external_username or d.external_user_id or "Cliente não informado"}}</strong><span class="status on">RECEBIDA</span></div><div class="meta"><span>Venda: {{d.external_sale_id or "—"}}</span><span>Produto: {{d.product_name or "—"}}</span><span>Key ID: {{d.api_key_id or "não vinculada"}}</span><span>{{d.delivered_at or "—"}}</span></div></div>
-  {% else %}<div class="empty">Nenhuma entrega recebida ainda.</div>{% endfor %}
-</section>
-
-<section class="card full-card">
-  <div class="list-head"><div><h2>API Keys</h2><p class="desc">Credenciais criadas neste painel, com seus limites e status.</p></div><span class="count">{{keys|length}} cadastradas</span></div>
-  {% for k in keys %}
-  <div class="item">
-    <div class="item-title"><strong>{{k.label}}</strong>{% if k.active %}<span class="status on">ATIVA</span>{% else %}<span class="status off">PAUSADA</span>{% endif %}</div>
-    <div class="meta"><span>ID {{k.id}}</span><span>Dono: {{k.owner_user_id or "—"}}</span><span>Expira: {{k.expires_at or "sem expiração"}}</span><span>Uso: {{k.rooms_used}}{% if k.max_rooms is not none %} / {{k.max_rooms}}{% endif %} salas</span><span>Saldo: R$ {{"%.2f"|format((k.balance_cents or 0) / 100)}}</span><span>{{k.rate_limit_per_minute}} req/min</span></div>
-    <div class="key-preview">{{k.key_prefix}} ••••••••••••••••</div>
-    <div class="actions"><form method="post" action="/admin/keys/{{k.id}}/renew"><button>+30 dias</button></form><form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{"Pausar" if k.active else "Ativar"}}</button></form><form method="post" action="/admin/keys/{{k.id}}/delete" onsubmit="return confirm('Excluir esta API Key?')"><button class="danger">Excluir</button></form></div>
-  </div>
-  {% else %}<div class="empty">Nenhuma API Key criada ainda.<br>Crie a primeira usando o formulário acima.</div>{% endfor %}
-</section>
-
-<div class="footer">Shadow API • Painel administrativo</div>
+<section id="status" class="section"><div class="grid cards"><div class="card"><h3>API</h3><div class="metric">Online</div><div class="sub">Serviço respondendo</div></div><div class="card"><h3>Supabase</h3><div class="metric">OK</div><div class="sub">Banco configurado</div></div><div class="card"><h3>Provedor</h3><div class="metric">{{"OK" if config_provider else "—"}}</div><div class="sub">Nix API configurada no servidor</div></div><div class="card"><h3>Região</h3><div class="metric">OR</div><div class="sub">Render Oregon</div></div></div></section>
 </div></main></div>
-</body>
-</html>
-"""
-
-DOCS_HTML = """
+<div class="toast" id="toast"></div>
+<script>
+const shell=document.getElementById('shell'),overlay=document.getElementById('overlay'),burger=document.getElementById('hamburger'),toast=document.getElementById('toast');
+const mobile=()=>matchMedia('(max-width:860px)').matches;
+burger.addEventListener('click',()=>{if(mobile()){shell.classList.toggle('mobile-open');overlay.classList.toggle('show',shell.classList.contains('mobile-open'))}else shell.classList.toggle('collapsed')});
+overlay.addEventListener('click',()=>{shell.classList.remove('mobile-open');overlay.classList.remove('show')});
+function show(id){document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.nav [data-target]').forEach(b=>b.classList.toggle('active',b.dataset.target===id));const names={overview:'Visão Geral',api:'API',bot:'Bot',hosting:'Hospedagem de Bots',mediator:'Auto Mediador',docs:'Documentação',status:'Status'};document.getElementById('pageTitle').textContent='Painel / '+names[id];if(mobile()){shell.classList.remove('mobile-open');overlay.classList.remove('show')}window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('[data-target]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();show(el.dataset.target)}));
+document.querySelectorAll('[data-goto]').forEach(el=>el.addEventListener('click',()=>show(el.dataset.goto)));
+function flash(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(flash.t);flash.t=setTimeout(()=>toast.classList.remove('show'),1800)}
+document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',async()=>{const pre=btn.parentElement.querySelector('pre').innerText;try{await navigator.clipboard.writeText(pre);flash('Copiado para a área de transferência.')}catch{flash('Não foi possível copiar automaticamente.')}}));
+</script></body></html>
+"""DOCS_HTML = """
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shadow API • Documentação</title><style>
 *{box-sizing:border-box}body{margin:0;background:#08060d;color:#f5f3ff;font-family:Inter,system-ui,Arial}.wrap{max-width:1000px;margin:auto;padding:22px}
