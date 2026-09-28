@@ -201,6 +201,7 @@ DASHBOARD_HTML = """
 <button class="active" data-target="overview"><span class="icon">⌂</span><span class="label">Visão Geral</span></button>
 <button data-target="api"><span class="icon">◈</span><span class="label">API</span></button>
 <button data-target="bot"><span class="icon">◆</span><span class="label">Bot</span></button>
+<button data-target="rooms"><span class="icon">◉</span><span class="label">Salas</span></button>
 <button data-target="hosting"><span class="icon">▣</span><span class="label">Hospedagem de Bots 🔒</span></button>
 <button data-target="mediator"><span class="icon">♢</span><span class="label">Auto Mediador 🔒</span></button>
 <button data-target="docs"><span class="icon">▤</span><span class="label">Documentação</span></button>
@@ -224,6 +225,8 @@ Content-Type: application/json</pre></div></div>
 {% if new_key %}<div class="panel" style="margin-top:16px;border-color:rgba(34,197,94,.35)"><h2 style="margin:0;color:#86efac">✓ API Key criada com sucesso</h2><p>Guarde esta chave agora. Ela não será exibida novamente.</p><div class="code"><pre>{{new_key}}</pre></div><button class="btn primary" onclick="navigator.clipboard.writeText({{new_key|tojson}});flash('Chave copiada!')">Copiar chave</button></div>{% endif %}</section>
 
 <section id="bot" class="section"><div class="panel"><div class="panel-head"><div><h2>Bot</h2><p>Estrutura preparada para integrar os recursos do Bot da Nix ao Shadow Panel.</p></div><span class="tag warn">EM PREPARAÇÃO</span></div><div class="list"><div class="row"><div><b>Visão Geral</b><span>Indicadores e atividade do bot</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Seu Bot</b><span>Gerenciamento e integração</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Configurações</b><span>Preferências do servidor</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Membros</b><span>Dados e gerenciamento</span></div><span class="tag ok">Planejado</span></div></div></div></section>
+
+<section id="rooms" class="section"><div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Criar sala personalizada</h2><p>Crie uma sala diretamente pelo Shadow Panel. A autenticação é feita pela sessão do painel e o token da Nix permanece privado no servidor.</p></div><span class="tag ok">AUTENTICADO</span></div><form class="form" method="post" action="/admin/rooms"><div class="field full"><label>Nome da sala</label><input name="room_name" value="Shadow Salas" maxlength="100" required></div><div class="field"><label>Tipo de configuração</label><select name="config_type"><option value="ap_padrao">AP Padrão</option><option value="gelo_inf">Gelo Infinito</option><option value="tatico">Tático</option><option value="ap_fullcapa">AP Full Capa</option><option value="capa_3">Capa 3</option><option value="ap_uxd">AP UXD</option><option value="ap_7r">AP 7R</option><option value="br_padrao">BR Padrão</option></select></div><div class="field"><label>Senha</label><input name="password" value="00" maxlength="20" required></div><div class="field"><label>Delay inicial (minutos)</label><input name="start_delay_minutes" type="number" min="1" max="20" value="1" required></div><div class="field"><label>Mapa</label><select name="map_name"><option>Bermuda</option><option>Purgatory</option><option>Kalahari</option><option>Nextera</option><option>Nova Terra</option><option>Solara</option></select></div><div class="field full"><button class="btn primary" type="submit">Criar sala</button></div></form>{% if room_result %}<div class="code"><pre>{{room_result|tojson(indent=2)}}</pre></div>{% endif %}</div><div class="panel"><div class="panel-head"><div><h2>Como funciona</h2><p>O navegador nunca recebe o token privado da Nix.</p></div></div><div class="list"><div class="row"><div><b>1. Login</b><span>O acesso exige a autenticação do Shadow Panel.</span></div><span class="tag ok">Auth</span></div><div class="row"><div><b>2. Shadow API</b><span>O painel envia a configuração para o servidor.</span></div><span class="tag ok">Seguro</span></div><div class="row"><div><b>3. Nix API</b><span>O servidor chama POST /rooms usando NIX_API_TOKEN.</span></div><span class="tag ok">Privado</span></div></div></div></div></section>
 
 <section id="hosting" class="section"><div class="panel"><div class="panel-head"><div><h2>Hospedagem de Bots</h2><p>Este módulo está reservado para uma futura etapa do Shadow Panel.</p></div><span class="tag lock">INDISPONÍVEL 🔒</span></div><div class="list"><div class="row"><div><b>Criar hospedagem</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div><div class="row"><div><b>Seus bots</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div><div class="row"><div><b>Planos</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div></div></div></section>
 
@@ -249,7 +252,7 @@ const shell=document.getElementById('shell'),overlay=document.getElementById('ov
 const mobile=()=>matchMedia('(max-width:860px)').matches;
 burger.addEventListener('click',()=>{if(mobile()){shell.classList.toggle('mobile-open');overlay.classList.toggle('show',shell.classList.contains('mobile-open'))}else shell.classList.toggle('collapsed')});
 overlay.addEventListener('click',()=>{shell.classList.remove('mobile-open');overlay.classList.remove('show')});
-function show(id){document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.nav [data-target]').forEach(b=>b.classList.toggle('active',b.dataset.target===id));const names={overview:'Visão Geral',api:'API',bot:'Bot',hosting:'Hospedagem de Bots',mediator:'Auto Mediador',docs:'Documentação',status:'Status'};document.getElementById('pageTitle').textContent='Painel / '+names[id];if(mobile()){shell.classList.remove('mobile-open');overlay.classList.remove('show')}window.scrollTo({top:0,behavior:'smooth'})}
+function show(id){document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.nav [data-target]').forEach(b=>b.classList.toggle('active',b.dataset.target===id));const names={overview:'Visão Geral',api:'API',bot:'Bot',rooms:'Salas',hosting:'Hospedagem de Bots',mediator:'Auto Mediador',docs:'Documentação',status:'Status'};document.getElementById('pageTitle').textContent='Painel / '+names[id];if(mobile()){shell.classList.remove('mobile-open');overlay.classList.remove('show')}window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-target]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();show(el.dataset.target)}));
 document.querySelectorAll('[data-goto]').forEach(el=>el.addEventListener('click',()=>show(el.dataset.goto)));
 function flash(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(flash.t);flash.t=setTimeout(()=>toast.classList.remove('show'),1800)}
@@ -432,6 +435,58 @@ def rooms():
         return jsonify(response), 502
 
 
+@app.post("/admin/rooms")
+def admin_create_room():
+    if not admin():
+        return redirect("/admin/login")
+
+    room_name = request.form.get("room_name", "Shadow Salas").strip() or "Shadow Salas"
+    config_type = request.form.get("config_type", "ap_padrao").strip() or "ap_padrao"
+    password = request.form.get("password", "00").strip() or "00"
+
+    try:
+        delay = max(1, min(20, int(request.form.get("start_delay_minutes", "1"))))
+    except ValueError:
+        delay = 1
+
+    map_name = request.form.get("map_name", "Bermuda").strip() or "Bermuda"
+    payload = {
+        "password": password,
+        "start_delay_minutes": delay,
+        "config_type": config_type,
+        "room_name": room_name,
+        "map_name": map_name,
+    }
+
+    try:
+        upstream = requests.post(
+            NIX_ROOMS_URL,
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {NIX_API_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            timeout=15,
+        )
+        try:
+            result = upstream.json()
+        except ValueError:
+            result = {"raw": upstream.text[:4000]}
+        session["room_result"] = {
+            "ok": 200 <= upstream.status_code < 300,
+            "status": upstream.status_code,
+            "response": result,
+        }
+    except requests.RequestException as exc:
+        session["room_result"] = {
+            "ok": False,
+            "status": 502,
+            "error": "Não foi possível conectar à API da Nix",
+        }
+
+    return redirect("/admin#rooms")
+
+
 @app.get("/admin/login")
 def login():
     if admin():
@@ -481,6 +536,7 @@ def dashboard():
         deliveries=deliveries,
         total_balance_cents=sum(int(item.get("balance_cents") or 0) for item in keys),
         new_key=session.pop("new_key", None),
+        room_result=session.pop("room_result", None),
     )
 
 
