@@ -79,6 +79,8 @@ def create_key(label, days, owner=None, max_rooms=None, rate_limit=30):
 
 
 def log_event(key_id, event_type, status_code, payload, response):
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+    client_ip_hash = hashlib.sha256(client_ip.encode()).hexdigest() if client_ip else None
     db.table("api_key_events").insert({
         "api_key_id": key_id,
         "event_type": event_type,
@@ -86,7 +88,64 @@ def log_event(key_id, event_type, status_code, payload, response):
         "status_code": status_code,
         "request_body": payload,
         "response_body": response,
+        "client_ip_hash": client_ip_hash,
+        "user_agent": request.headers.get("User-Agent", "")[:500],
+        "client_id": request.headers.get("X-Client-ID", "")[:200] or None,
     }).execute()
+
+
+def find_key_by_raw(raw):
+    if not raw:
+        return None
+    result = db.table("api_keys").select("*").eq("key_hash", hash_key(str(raw).strip())).limit(1).execute()
+    return (result.data or [None])[0]
+
+
+def register_delivery(payload):
+    if not isinstance(payload, dict):
+        return None
+
+    raw_key = (
+        payload.get("api_key") or payload.get("key") or payload.get("license_key")
+        or payload.get("access_key") or payload.get("token")
+    )
+    key = find_key_by_raw(raw_key)
+
+    customer = payload.get("customer") if isinstance(payload.get("customer"), dict) else {}
+    user = payload.get("user") if isinstance(payload.get("user"), dict) else {}
+    buyer = payload.get("buyer") if isinstance(payload.get("buyer"), dict) else {}
+
+    external_user_id = (
+        payload.get("user_id") or payload.get("discord_user_id")
+        or customer.get("id") or user.get("id") or buyer.get("id")
+    )
+    external_username = (
+        payload.get("username") or payload.get("user_name")
+        or payload.get("customer_name") or payload.get("name")
+        or customer.get("username") or customer.get("name")
+        or user.get("username") or user.get("name")
+        or buyer.get("username") or buyer.get("name")
+    )
+    sale_id = (
+        payload.get("sale_id") or payload.get("order_id")
+        or payload.get("transaction_id") or payload.get("id")
+    )
+    product_name = (
+        payload.get("product") if isinstance(payload.get("product"), str) else
+        payload.get("product_name") or payload.get("item") or payload.get("plan")
+    )
+
+    row = {
+        "api_key_id": key.get("id") if key else None,
+        "external_sale_id": str(sale_id) if sale_id is not None else None,
+        "external_user_id": str(external_user_id) if external_user_id is not None else None,
+        "external_username": str(external_username) if external_username is not None else None,
+        "product_name": str(product_name) if product_name is not None else None,
+        "source": "ag_solutions",
+        "payload": payload,
+    }
+    saved = db.table("api_key_deliveries").insert(row).execute()
+    return saved.data[0] if saved.data else row
 
 
 LOGIN_HTML = """
@@ -191,6 +250,23 @@ Content-Type: application/json</pre>
 {% endif %}
 
 <section class="card keys-card">
+  <div class="item-title"><div><h2>Entregas recebidas</h2><p class="desc">Vendas/webhooks recebidos e associados às API Keys.</p></div><span class="muted">{{deliveries|length}} recentes</span></div>
+  {% for d in deliveries %}
+  <div class="item">
+    <div class="item-title"><strong>{{d.external_username or d.external_user_id or "Cliente não informado"}}</strong><span class="status on">RECEBIDA</span></div>
+    <div class="meta">
+      <span>Venda: {{d.external_sale_id or "—"}}</span>
+      <span>Produto: {{d.product_name or "—"}}</span>
+      <span>Key ID: {{d.api_key_id or "não vinculada"}}</span>
+      <span>{{d.delivered_at or "—"}}</span>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty">Nenhuma entrega recebida ainda.</div>
+  {% endfor %}
+</section>
+
+<section class="card keys-card">
   <div class="item-title"><div><h2>API Keys</h2><p class="desc">Chaves criadas neste painel e seus limites.</p></div><span class="muted">{{keys|length}} cadastradas</span></div>
   {% for k in keys %}
   <div class="item">
@@ -255,6 +331,28 @@ def home():
     if admin():
         return redirect("/admin")
     return redirect("/admin/login")
+
+
+@app.post("/")
+def ag_webhook_root():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"ok": False, "error": "O corpo do webhook deve ser JSON"}), 400
+    try:
+        delivery = register_delivery(payload)
+        return jsonify({
+            "ok": True,
+            "received": True,
+            "delivery_id": delivery.get("id") if delivery else None,
+            "api_key_linked": bool(delivery and delivery.get("api_key_id")),
+        }), 200
+    except Exception:
+        return jsonify({"ok": False, "error": "Falha ao registrar webhook"}), 500
+
+
+@app.post("/webhook/ag-solutions")
+def ag_webhook():
+    return ag_webhook_root()
 
 
 @app.get("/health")
@@ -360,12 +458,14 @@ def dashboard():
     keys = db.table("api_keys").select("*").order("created_at", desc=True).execute().data or []
     active = sum(1 for item in keys if valid_key(item))
     rooms_used = sum(int(item.get("rooms_used") or 0) for item in keys)
+    deliveries = db.table("api_key_deliveries").select("*").order("delivered_at", desc=True).limit(50).execute().data or []
 
     return render_template_string(
         DASHBOARD_HTML,
         keys=keys,
         active_count=active,
         rooms_used=rooms_used,
+        deliveries=deliveries,
         new_key=session.pop("new_key", None),
     )
 
