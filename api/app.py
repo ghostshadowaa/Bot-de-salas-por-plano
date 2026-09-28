@@ -284,31 +284,122 @@ HOME_HTML = """
 
 DOCS_HTML = """
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shadow API • Documentação</title><style>
-*{box-sizing:border-box}body{margin:0;background:#08060d;color:#f5f3ff;font-family:Inter,system-ui,Arial}.wrap{max-width:1000px;margin:auto;padding:22px}
-.card{background:#110d1b;border:1px solid #292033;border-radius:18px;padding:20px;margin:14px 0}.muted{color:#a49caf}a{color:#c4b5fd;text-decoration:none}code,pre{background:#0b0710;border:1px solid #292033;border-radius:10px}code{padding:2px 5px}pre{padding:14px;overflow:auto;white-space:pre-wrap}.method{color:#a78bfa;font-weight:900}
-</style></head><body><div class="wrap"><a href="/admin">← Dashboard</a><h1>Shadow API — Documentação</h1>
-<p class="muted">API própria da Shadow para criação de salas. Cada sala criada com sucesso consome R$ 0,05 do saldo da API Key.</p>
-<div class="card"><h2>Base URL</h2><pre>{{base_url}}</pre></div>
-<div class="card"><h2>Autenticação</h2><p>Envie sua chave em todas as requisições protegidas:</p><pre>X-API-Key: sk_sua_chave
-Content-Type: application/json</pre><p class="muted">A chave é armazenada no banco somente como hash.</p></div>
-<div class="card"><h2><span class="method">POST</span> /v1/rooms</h2><p>Cria uma sala usando o provedor configurado no servidor.</p>
-<pre>curl -X POST "{{base_url}}/v1/rooms" \
+<title>Shadow API • Documentação</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#070b16;color:#e5eefc;font-family:Inter,system-ui,Arial}.wrap{max-width:1050px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.brand{font-size:21px;font-weight:900}.actions{display:flex;gap:9px}.btn{display:inline-block;padding:10px 14px;border-radius:12px;border:1px solid #334155;background:#111827;color:#fff;text-decoration:none;cursor:pointer}.primary,.tab.active{background:#7c3aed;border-color:#7c3aed}.card{margin-top:16px;padding:20px;border:1px solid #1e293b;border-radius:18px;background:#0d1426}.muted{color:#94a3b8;line-height:1.6}.method{color:#c4b5fd;font-weight:900}.code{margin-top:12px;background:#020617;border:1px solid #1e293b;border-radius:14px;overflow:auto}.code pre{margin:0;padding:16px;color:#c4b5fd;font-size:13px;line-height:1.65;white-space:pre-wrap}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.tab{color:#fff}.lang{display:none}.lang.active{display:block}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.tag{display:inline-block;padding:5px 9px;border-radius:999px;background:#14532d;color:#bbf7d0;font-size:12px;font-weight:800}li{margin:8px 0;color:#cbd5e1}@media(max-width:700px){.top{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}}</style></head>
+<body><div class="wrap"><header class="top"><div class="brand">🟣 Shadow API</div><div class="actions"><a class="btn" href="/">Início</a><a class="btn primary" href="/dashboard">Dashboard</a></div></header>
+<section class="card"><span class="tag">API v1</span><h1>Documentação</h1><p class="muted">Integre sua aplicação para criar salas através da Shadow API. A API Key é enviada em <b>X-API-Key</b> e o token privado do provedor permanece somente no servidor.</p><div class="code"><pre>Base URL: {{base_url}}</pre></div></section>
+<section class="card"><h2>Autenticação</h2><p class="muted">Todas as chamadas para criação de salas precisam da sua API Key.</p><div class="code"><pre>X-API-Key: sk_sua_chave
+Content-Type: application/json</pre></div><p class="muted">Não coloque a chave em frontend público, HTML, aplicativo distribuído ou repositório público. Prefira o backend.</p></section>
+<section class="card"><h2><span class="method">POST</span> /v1/rooms</h2><p class="muted">Cria uma sala e repassa a resposta do provedor.</p><div class="code"><pre>{
+  "config_type": "ap_padrao",
+  "password": "00",
+  "start_delay_minutes": 1,
+  "map_name": "Bermuda",
+  "room_name": "Shadow Salas"
+}</pre></div><h3>Configurações</h3><p class="muted"><b>config_type:</b> ap_padrao, gelo_inf, tatico, ap_fullcapa, capa_3, ap_uxd, ap_7r ou br_padrao.</p><p class="muted"><b>password:</b> senha da sala. <b>start_delay_minutes:</b> delay inicial. <b>map_name:</b> mapa. <b>room_name:</b> nome da sala.</p></section>
+<section class="card"><h2>Exemplos por linguagem</h2><div class="tabs"><button class="btn tab active" data-l="curl">cURL</button><button class="btn tab" data-l="python">Python</button><button class="btn tab" data-l="node">Node.js</button><button class="btn tab" data-l="php">PHP</button><button class="btn tab" data-l="java">Java</button><button class="btn tab" data-l="csharp">C#</button><button class="btn tab" data-l="go">Go</button></div>
+<div id="curl" class="lang active"><div class="code"><pre>curl -X POST "{{base_url}}/v1/rooms" \
   -H "X-API-Key: sk_sua_chave" \
   -H "Content-Type: application/json" \
-  -d '{
-    "config_type": "ap_padrao",
-    "password": "00",
-    "start_delay_minutes": 1,
-    "map_name": "Bermuda",
-    "room_name": "Shadow Salas"
-  }'</pre></div>
-<div class="card"><h2>Resposta</h2><p>A resposta do provedor é repassada em JSON. Em erro de autenticação:</p><pre>{
-  "error": "API key inválida, pausada ou expirada"
-}</pre></div>
-<div class="card"><h2>Códigos HTTP</h2><ul><li><b>200–299</b> — requisição aceita pelo provedor.</li><li><b>401</b> — chave ausente, inválida, pausada ou expirada.</li><li><b>403</b> — limite de salas atingido.</li><li><b>502</b> — falha na comunicação com o provedor.</li></ul></div>
-<div class="card"><h2>Health</h2><pre>GET {{base_url}}/health</pre></div>
-</div></body></html>
+  -d '{"config_type":"ap_padrao","password":"00","start_delay_minutes":1,"map_name":"Bermuda","room_name":"Shadow Salas"}'</pre></div></div>
+<div id="python" class="lang"><div class="code"><pre>import requests
+
+response = requests.post(
+    "{{base_url}}/v1/rooms",
+    headers={"X-API-Key": "sk_sua_chave"},
+    json={
+        "config_type": "ap_padrao",
+        "password": "00",
+        "start_delay_minutes": 1,
+        "map_name": "Bermuda",
+        "room_name": "Shadow Salas"
+    },
+    timeout=20
+)
+
+print(response.status_code)
+print(response.json())</pre></div><p class="muted">Instalação: pip install requests</p></div>
+<div id="node" class="lang"><div class="code"><pre>const response = await fetch("{{base_url}}/v1/rooms", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "sk_sua_chave",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    config_type: "ap_padrao",
+    password: "00",
+    start_delay_minutes: 1,
+    map_name: "Bermuda",
+    room_name: "Shadow Salas"
+  })
+});
+
+console.log(response.status);
+console.log(await response.json());</pre></div><p class="muted">Node.js moderno possui fetch nativo.</p></div>
+<div id="php" class="lang"><div class="code"><pre>&lt;?php
+$ch = curl_init("{{base_url}}/v1/rooms");
+curl_setopt_array($ch, [
+  CURLOPT_POST =&gt; true,
+  CURLOPT_HTTPHEADER =&gt; ["X-API-Key: sk_sua_chave", "Content-Type: application/json"],
+  CURLOPT_POSTFIELDS =&gt; json_encode([
+    "config_type" =&gt; "ap_padrao",
+    "password" =&gt; "00",
+    "start_delay_minutes" =&gt; 1,
+    "map_name" =&gt; "Bermuda",
+    "room_name" =&gt; "Shadow Salas"
+  ]),
+  CURLOPT_RETURNTRANSFER =&gt; true
+]);
+echo curl_exec($ch);
+curl_close($ch);</pre></div></div>
+<div id="java" class="lang"><div class="code"><pre>String json = "{\"config_type\":\"ap_padrao\",\"password\":\"00\",\"start_delay_minutes\":1,\"map_name\":\"Bermuda\",\"room_name\":\"Shadow Salas\"}";
+
+HttpRequest request = HttpRequest.newBuilder()
+  .uri(URI.create("{{base_url}}/v1/rooms"))
+  .header("X-API-Key", "sk_sua_chave")
+  .header("Content-Type", "application/json")
+  .POST(HttpRequest.BodyPublishers.ofString(json))
+  .build();
+
+HttpResponse&lt;String&gt; response = HttpClient.newHttpClient()
+  .send(request, HttpResponse.BodyHandlers.ofString());
+
+System.out.println(response.body());</pre></div></div>
+<div id="csharp" class="lang"><div class="code"><pre>using System.Net.Http.Json;
+
+var client = new HttpClient();
+client.DefaultRequestHeaders.Add("X-API-Key", "sk_sua_chave");
+
+var payload = new {
+  config_type = "ap_padrao",
+  password = "00",
+  start_delay_minutes = 1,
+  map_name = "Bermuda",
+  room_name = "Shadow Salas"
+};
+
+var response = await client.PostAsJsonAsync("{{base_url}}/v1/rooms", payload);
+Console.WriteLine(await response.Content.ReadAsStringAsync());</pre></div></div>
+<div id="go" class="lang"><div class="code"><pre>package main
+
+import (
+  "bytes"
+  "net/http"
+)
+
+func main() {
+  body := []byte(`{"config_type":"ap_padrao","password":"00","start_delay_minutes":1,"map_name":"Bermuda","room_name":"Shadow Salas"}`)
+  req, _ := http.NewRequest("POST", "{{base_url}}/v1/rooms", bytes.NewBuffer(body))
+  req.Header.Set("X-API-Key", "sk_sua_chave")
+  req.Header.Set("Content-Type", "application/json")
+  res, _ := http.DefaultClient.Do(req)
+  defer res.Body.Close()
+}</pre></div></div>
+</section>
+<div class="grid"><section class="card"><h2>Respostas</h2><p class="muted">Em sucesso, a resposta JSON do provedor é repassada pela Shadow API. Ela pode conter dados como ID da sala, senha e link de convite.</p></section><section class="card"><h2>Códigos HTTP</h2><ul><li><b>400</b> — JSON inválido ou ausente.</li><li><b>401</b> — API Key ausente, inválida, pausada ou expirada.</li><li><b>402</b> — saldo insuficiente.</li><li><b>403</b> — limite de salas atingido.</li><li><b>502</b> — falha ao comunicar com o provedor.</li></ul></section><section class="card"><h2>Consumo</h2><p class="muted">Cada criação de sala bem-sucedida consome <b>R$ 0,05</b>. Em falhas, o valor reservado é devolvido.</p></section><section class="card"><h2>Segurança</h2><ul><li>Mantenha a API Key no backend.</li><li>Não publique a chave no GitHub.</li><li>Use HTTPS.</li><li>Se uma chave vazar, solicite ao administrador a pausa ou remoção.</li></ul></section></div>
+</div><script>
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".lang").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.l).classList.add("active")}));
+</script></body></html>
 """
 
 
@@ -598,20 +689,32 @@ USER_DASHBOARD_HTML = """
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shadow API • Dashboard</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#070b16;color:#e5eefc;font-family:Inter,system-ui,Arial}.wrap{max-width:1100px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 18px;border:1px solid #1e293b;border-radius:18px;background:#0d1426}.brand{font-weight:900;font-size:20px}.actions{display:flex;gap:10px;flex-wrap:wrap}a{color:inherit;text-decoration:none}.btn{padding:10px 14px;border-radius:12px;border:1px solid #334155;background:#111827}.primary{background:#7c3aed;border-color:#7c3aed;font-weight:800}.danger{border-color:#7f1d1d;color:#fca5a5}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}.card,.panel{padding:18px;border:1px solid #1e293b;border-radius:18px;background:#0d1426}.muted{color:#94a3b8}.metric{font-size:28px;font-weight:900;margin-top:7px}.panel{margin-top:18px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #1e293b}.row:last-child{border-bottom:0}.tag{padding:5px 9px;border-radius:999px;font-size:12px;background:#14532d;color:#bbf7d0}@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.top{align-items:flex-start;flex-direction:column}}@media(max-width:500px){.grid{grid-template-columns:1fr}}
-</style></head><body><div class="wrap">
-<header class="top"><div><div class="brand">🟣 Shadow API</div><div class="muted">Dashboard do usuário</div></div>
-<div class="actions"><a class="btn" href="/docs">Documentação</a><a class="btn danger" href="/logout">↪ Sair da conta</a></div></header>
-<div class="grid">
-<div class="card"><div class="muted">Discord</div><div class="metric">{{ user.get("global_name") or user.get("username") or "Usuário" }}</div></div>
-<div class="card"><div class="muted">API Keys</div><div class="metric">{{ keys|length }}</div></div>
-<div class="card"><div class="muted">Keys ativas</div><div class="metric">{{ active_count }}</div></div>
-<div class="card"><div class="muted">Salas usadas</div><div class="metric">{{ rooms_used }}</div></div>
-</div>
-<section class="panel"><h2>Minhas API Keys</h2><p class="muted">Somente chaves vinculadas ao seu Discord aparecem aqui.</p>
-{% if keys %}{% for k in keys %}<div class="row"><div><b>{{ k.label }}</b><div class="muted">{{ k.key_prefix }}•••• · Saldo R$ {{ "%.2f"|format((k.balance_cents or 0)/100) }}</div></div><span class="tag">{{ "Ativa" if k.active else "Pausada" }}</span></div>{% endfor %}{% else %}<p class="muted">Nenhuma API Key vinculada à sua conta ainda. Um administrador pode criar uma vinculada ao seu Discord User ID.</p>{% endif %}
-</section><section class="panel"><h2>Salas</h2><p class="muted">A criação de salas pela API usa uma API Key vinculada à sua conta e desconta R$ 0,05 por criação bem-sucedida.</p><a class="btn primary" href="/docs">Ver documentação da API</a></section>
-</div></body></html>
+:root{--bg:#070b16;--panel:#0d1426;--line:rgba(148,163,184,.16);--text:#e5eefc;--muted:#93a4bd;--brand:#7c3aed;--cyan:#22d3ee;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial;background:radial-gradient(circle at 20% 0%,rgba(124,58,237,.22),transparent 34%),radial-gradient(circle at 80% 10%,rgba(34,211,238,.12),transparent 28%),var(--bg);color:var(--text)}a{color:inherit;text-decoration:none}
+.shell{display:grid;grid-template-columns:270px 1fr;min-height:100vh}.side{position:sticky;top:0;height:100vh;padding:20px 15px;background:rgba(9,14,27,.96);border-right:1px solid var(--line)}.brand{display:flex;gap:11px;align-items:center;padding:10px 12px 18px;border-bottom:1px solid var(--line)}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),#4f46e5 55%,var(--cyan));display:grid;place-items:center;font-weight:900}.brand small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.nav{margin-top:18px;display:grid;gap:7px}.nav a{padding:12px 13px;border-radius:13px;color:var(--muted);border:1px solid transparent}.nav a:hover,.nav a.active{background:linear-gradient(135deg,rgba(124,58,237,.27),rgba(34,211,238,.08));border-color:rgba(124,58,237,.35);color:var(--text)}.ico{display:inline-block;width:25px}
+.main{padding:24px;min-width:0}.top{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:19px;background:rgba(7,11,22,.76);backdrop-filter:blur(15px)}.title h1{margin:0;font-size:19px}.title p{margin:3px 0 0;color:var(--muted);font-size:13px}.actions{display:flex;gap:9px}.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.04)}.primary{background:linear-gradient(135deg,var(--brand),#4f46e5);border-color:rgba(124,58,237,.5);font-weight:800}.danger{color:#fca5a5;border-color:rgba(239,68,68,.3)}
+.grid{display:grid;gap:15px;margin-top:17px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card,.panel{padding:18px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));box-shadow:0 18px 55px rgba(0,0,0,.28)}.card h3{margin:0;color:var(--muted);font-size:13px}.metric{font-size:30px;font-weight:900;margin-top:8px}.muted{color:var(--muted);line-height:1.55}.two{grid-template-columns:1.25fr .9fr}.head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.head h2{margin:0;font-size:17px}.head p{margin:6px 0 0;color:var(--muted)}.list{display:grid;gap:10px;margin-top:15px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}.row b{display:block}.row span{display:block;color:var(--muted);font-size:12px;margin-top:4px}.tag{padding:6px 9px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap}.ok{background:rgba(34,197,94,.12);color:#86efac}.warn{background:rgba(245,158,11,.12);color:#fcd34d}.lock{background:rgba(239,68,68,.12);color:#fca5a5}.code{margin-top:14px;background:#020617;border:1px solid rgba(34,211,238,.2);border-radius:15px;padding:15px;overflow:auto}.code pre{margin:0;color:#c4b5fd;font-size:12px;line-height:1.7}.empty{text-align:center;padding:25px;color:var(--muted);border:1px dashed var(--line);border-radius:15px}.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}.quick div{padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}.quick b{display:block;margin-bottom:5px}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}@media(max-width:750px){.shell{display:block}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}.nav{grid-template-columns:repeat(2,1fr)}.main{padding:14px}.cards{grid-template-columns:1fr}.quick{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style></head><body>
+<div class="shell"><aside class="side"><div class="brand"><div class="logo">S</div><div><b>Shadow API</b><small>Área do cliente</small></div></div>
+<nav class="nav"><a class="active" href="/dashboard"><span class="ico">⌂</span>Visão Geral</a><a href="#keys"><span class="ico">◈</span>Minhas API Keys</a><a href="#usage"><span class="ico">◉</span>Uso da API</a><a href="/docs"><span class="ico">▤</span>Documentação</a><a href="/health"><span class="ico">●</span>Status</a></nav>
+<div style="margin-top:20px;padding:13px;border:1px solid var(--line);border-radius:15px"><span class="tag ok">● API ONLINE</span><div class="muted" style="font-size:12px;margin-top:9px">Login protegido pelo Discord</div></div></aside>
+<main class="main"><header class="top"><div class="title"><h1>Dashboard / Visão Geral</h1><p>Gerencie suas credenciais e acompanhe o uso da Shadow API.</p></div><div class="actions"><a class="btn" href="/docs">Documentação</a><a class="btn danger" href="/logout">↪ Sair</a></div></header>
+<div class="grid cards"><div class="card"><h3>Conta Discord</h3><div class="metric">{{ user.get("global_name") or user.get("username") or "Usuário" }}</div><div class="muted">ID: {{ user.get("id","—") }}</div></div><div class="card"><h3>API Keys</h3><div class="metric">{{ keys|length }}</div><div class="muted">Vinculadas à sua conta</div></div><div class="card"><h3>Keys ativas</h3><div class="metric">{{ active_count }}</div><div class="muted">Disponíveis para uso</div></div><div class="card"><h3>Salas utilizadas</h3><div class="metric">{{ rooms_used }}</div><div class="muted">Criações bem-sucedidas</div></div></div>
+<section class="panel" style="margin-top:15px"><div class="head"><div><h2>Bem-vindo ao Shadow API</h2><p>Este é o seu espaço de cliente. Recursos administrativos, gerenciamento global e configurações internas ficam fora desta área.</p></div><span class="tag ok">CLIENTE</span></div><div class="quick"><div><b>🔑 Credencial</b><span class="muted">Use sua API Key no header X-API-Key.</span></div><div><b>🎮 Salas</b><span class="muted">Cada criação aceita pelo provedor custa R$ 0,05.</span></div><div><b>📚 Integração</b><span class="muted">Exemplos prontos em várias linguagens na documentação.</span></div></div></section>
+<div class="grid two"><section class="panel" id="keys"><div class="head"><div><h2>Minhas API Keys</h2><p>Somente chaves vinculadas ao seu Discord aparecem aqui.</p></div><span class="tag warn">{{ keys|length }} cadastradas</span></div>{% if keys %}<div class="list">{% for k in keys %}<div class="row"><div><b>{{ k.label }}</b><span>{{ k.key_prefix }}•••• · Saldo R$ {{ "%.2f"|format((k.balance_cents or 0)/100) }}</span><span>Salas: {{ k.rooms_used or 0 }}{% if k.max_rooms %} / {{ k.max_rooms }}{% else %} / ilimitado{% endif %} · Expira: {{ k.expires_at or "sem expiração" }}</span></div>{% if valid_key(k) %}<span class="tag ok">ATIVA</span>{% else %}<span class="tag lock">INATIVA</span>{% endif %}</div>{% endfor %}</div>{% else %}<div class="empty">Nenhuma API Key vinculada à sua conta ainda.</div>{% endif %}</section>
+<section class="panel" id="usage"><div class="head"><div><h2>Uso da API</h2><p>Resumo do consumo das suas credenciais.</p></div><span class="tag ok">R$ 0,05 / sala</span></div><div class="list"><div class="row"><div><b>Salas criadas</b><span>Total entre suas chaves</span></div><b>{{ rooms_used }}</b></div><div class="row"><div><b>Saldo disponível</b><span>Total das suas chaves</span></div><b>R$ {{ "%.2f"|format((keys|sum(attribute="balance_cents") or 0)/100) }}</b></div><div class="row"><div><b>Endpoint</b><span>POST /v1/rooms</span></div><span class="tag ok">ONLINE</span></div></div><div class="code"><pre>X-API-Key: sk_sua_chave
+Content-Type: application/json
+
+{
+  "config_type": "ap_padrao",
+  "password": "00",
+  "start_delay_minutes": 1,
+  "map_name": "Bermuda",
+  "room_name": "Shadow Salas"
+}</pre></div><a class="btn primary" href="/docs" style="margin-top:14px">Abrir documentação completa →</a></section></div>
+<section class="panel"><div class="head"><div><h2>Como começar</h2><p>Fluxo recomendado para integrar sua aplicação.</p></div></div><div class="list"><div class="row"><div><b>1. Obtenha sua API Key</b><span>Use uma chave vinculada ao seu Discord.</span></div><span class="tag ok">API</span></div><div class="row"><div><b>2. Envie X-API-Key</b><span>Mantenha a chave no backend e nunca em frontend público.</span></div><span class="tag warn">SEGURANÇA</span></div><div class="row"><div><b>3. POST /v1/rooms</b><span>A Shadow API faz a comunicação privada com o provedor.</span></div><span class="tag ok">PRONTO</span></div></div></section>
+</main></div></body></html>
 """
 
 @app.get("/dashboard")
