@@ -298,7 +298,7 @@ Content-Type: application/json</pre><p class="muted">A chave é armazenada no ba
 def home():
     if admin():
         return redirect("/admin")
-    return redirect("/admin/login")
+    return redirect("/login")
 
 
 @app.post("/")
@@ -491,14 +491,14 @@ def admin_create_room():
     return redirect("/admin#rooms")
 
 
-@app.get("/admin/login")
+@app.get("/login")
 def login():
     if admin():
         return redirect("/admin")
     return render_template_string(LOGIN_HTML, error=None)
 
 
-@app.post("/admin/login")
+@app.post("/login")
 def login_post():
     username = request.form.get("username", "")
     password = request.form.get("password", "")
@@ -522,7 +522,7 @@ def login_post():
 @app.get("/admin/logout")
 def logout():
     session.clear()
-    return redirect("/admin/login")
+    return redirect("/login")
 
 
 @app.get("/admin")
