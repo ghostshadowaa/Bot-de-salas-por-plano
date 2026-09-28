@@ -173,128 +173,136 @@ DASHBOARD_HTML = """
 <title>Shadow API • Dashboard</title>
 <style>
 *{box-sizing:border-box}
-:root{--bg:#07050b;--panel:#100c17;--panel2:#151020;--border:#292035;--text:#f8f7fb;--muted:#9d95aa;--purple:#8b5cf6;--purple2:#6d28d9;--green:#70e0a0;--yellow:#f6d477;--red:#f87171}
-body{margin:0;background:radial-gradient(circle at 15% 0%,#25113e 0,transparent 32%),radial-gradient(circle at 90% 10%,#17102a 0,transparent 28%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
-.wrap{max-width:1240px;margin:auto;padding:28px}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:26px}
-.brand{display:flex;align-items:center;gap:13px}.logo{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#6d28d9);box-shadow:0 10px 30px #7c3aed44;font-size:22px}
-h1,h2,h3,p{margin-top:0}.brand h1{font-size:22px;margin:0}.muted{color:var(--muted)}
-.top-actions{display:flex;gap:9px;flex-wrap:wrap}.top-actions a,.nav a{color:#d8ccf7;text-decoration:none;border:1px solid var(--border);background:#0e0a15;padding:9px 13px;border-radius:10px;font-size:14px}.top-actions a:hover,.nav a:hover{border-color:#60448a}
-.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}.nav a.active{background:#24153b;border-color:#7045a5;color:#fff}
-.hero{padding:26px;border:1px solid #352649;border-radius:22px;background:linear-gradient(135deg,#171020cc,#0f0b16dd);box-shadow:0 18px 55px #0005;margin-bottom:18px}.hero h2{font-size:28px;margin-bottom:7px}.hero p{margin-bottom:0;max-width:700px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--panel);}.stat-head{display:flex;justify-content:space-between;align-items:center}.stat-icon{font-size:18px;opacity:.8}.num{font-size:30px;font-weight:900;margin-top:8px}
-.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:18px}.card{background:#100c17e8;border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 10px 35px #0003}.card h2{font-size:18px;margin-bottom:5px}.card .desc{font-size:13px;color:var(--muted);margin-bottom:16px}
-input,select,button{width:100%;padding:12px 13px;margin-top:8px;border-radius:10px;background:#0a0710;color:#fff;border:1px solid #342842;font:inherit}input:focus,select:focus{outline:2px solid #7c3aed55;border-color:#8054b9}button{background:linear-gradient(135deg,var(--purple),var(--purple2));border:0;font-weight:800;cursor:pointer;box-shadow:0 8px 22px #7c3aed2b}button:hover{filter:brightness(1.08)}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{grid-column:1/-1}.hint{font-size:12px;color:var(--muted);margin-top:8px}
-pre{white-space:pre-wrap;background:#09070d;border:1px solid var(--border);border-radius:12px;padding:13px;overflow:auto;color:#d9d0eb;font-size:12px}
-.link{display:inline-flex;margin-top:13px;color:#c4b5fd;text-decoration:none;font-weight:700}.link:hover{text-decoration:underline}
-.key-alert{margin:18px 0;padding:18px;border:1px solid #3e6a51;border-radius:16px;background:#0d1a13}.success{color:var(--green)}.key{word-break:break-all;color:#c4b5fd;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#08060d;border:1px solid #26352b;padding:12px;border-radius:10px;margin:10px 0}
-.keys-card{margin-top:18px}.item{padding:17px 0;border-top:1px solid var(--border)}.item:first-child{border-top:0}.item-title{display:flex;justify-content:space-between;gap:10px;align-items:center}.status{font-size:11px;font-weight:900;padding:5px 8px;border-radius:999px}.on{background:#123521;color:var(--green)}.off{background:#342b13;color:var(--yellow)}.meta{display:flex;flex-wrap:wrap;gap:8px 14px;color:var(--muted);font-size:12px;margin:7px 0 10px}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions form{flex:1;min-width:105px}.actions button{background:#1b1425;box-shadow:none}.actions .danger{background:#431c27}.empty{padding:28px;text-align:center;border:1px dashed #3a3045;border-radius:13px;color:var(--muted)}
-.footer{text-align:center;color:#71697b;font-size:12px;padding:25px 0 5px}
-@media(max-width:800px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.wrap{padding:18px}.topbar{align-items:flex-start}.hero h2{font-size:23px}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.item-title{align-items:flex-start;flex-direction:column}}
+:root{--bg:#08070c;--panel:#0f0d15;--panel2:#14101d;--line:#26212f;--text:#f7f5fb;--muted:#9891a5;--purple:#8b5cf6;--purple2:#6d28d9;--green:#55d98b;--yellow:#e8c76b;--red:#ef6b78}
+html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.app{min-height:100vh;display:flex}.sidebar{position:fixed;left:0;top:0;bottom:0;width:248px;background:#0b0910;border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;z-index:5}
+.brand{display:flex;align-items:center;gap:11px;padding:4px 8px 24px}.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#a78bfa,#6d28d9);display:grid;place-items:center;font-weight:900;font-size:19px;box-shadow:0 10px 30px #7c3aed33}.brand strong{font-size:16px}.brand span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#655e70;font-weight:800;padding:14px 10px 7px}.side-nav{display:grid;gap:3px}.side-nav a{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:9px;color:#aaa3b5;text-decoration:none;font-size:13px}.side-nav a:hover,.side-nav a.active{background:#181220;color:#fff}.side-nav a.active{box-shadow:inset 2px 0 var(--purple)}.ico{width:19px;text-align:center;opacity:.85}
+.side-bottom{margin-top:auto;border-top:1px solid var(--line);padding-top:14px}.account{display:flex;align-items:center;gap:9px;padding:9px}.avatar{width:30px;height:30px;border-radius:9px;background:#21162f;display:grid;place-items:center;color:#c4b5fd;font-weight:800}.account small{display:block;color:var(--muted);font-size:10px}.logout{margin-left:auto;color:#777080;text-decoration:none;font-size:12px}
+.main{margin-left:248px;width:calc(100% - 248px);min-width:0}.top{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 34px;background:#0b0910cc;backdrop-filter:blur(12px);position:sticky;top:0;z-index:4}.crumb{font-size:13px;color:var(--muted)}.crumb b{color:#eee}.top-links{display:flex;gap:8px}.top-links a{color:#aaa3b5;text-decoration:none;font-size:12px;border:1px solid var(--line);padding:8px 11px;border-radius:8px}.top-links a:hover{color:#fff;border-color:#443552}
+.content{max-width:1180px;margin:auto;padding:32px}.eyebrow{color:#a78bfa;font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;margin-bottom:8px}.title-row{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:24px}.title-row h1{font-size:29px;margin:0 0 7px;letter-spacing:-.03em}.title-row p{margin:0;color:var(--muted);font-size:13px}.status-pill{display:flex;align-items:center;gap:7px;border:1px solid #254332;background:#0c1711;color:#83dda5;border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800}.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px}.stat-top{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.stat-icon{color:#bba1ee}.num{font-size:27px;font-weight:850;margin-top:13px;letter-spacing:-.03em}.stat-foot{font-size:10px;color:#625b6c;margin-top:5px}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}.card h2{font-size:15px;margin:0 0 5px}.desc{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}input,select,button{width:100%;min-height:42px;padding:10px 12px;border-radius:9px;background:#0a080e;color:#fff;border:1px solid #2c2635;font:inherit;font-size:12px}input:focus,select:focus{outline:none;border-color:#7952ad;box-shadow:0 0 0 3px #7c3aed18}button{background:linear-gradient(135deg,var(--purple),var(--purple2));border:0;font-weight:800;cursor:pointer}button:hover{filter:brightness(1.08)}.full{grid-column:1/-1}.hint{font-size:10px;color:#696273;margin-top:9px}
+.endpoint{background:#0a080e;border:1px solid var(--line);border-radius:10px;padding:13px}.method{color:#9f7aea;font-weight:900;font-size:10px;margin-right:7px}.endpoint strong{font-family:ui-monospace,monospace;font-size:12px}.endpoint p{font-size:11px;color:var(--muted);margin:8px 0 0}.code{margin-top:10px;background:#08070b;border:1px solid var(--line);border-radius:9px;padding:11px;font:11px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;color:#cfc7da;white-space:pre-wrap}.link{display:inline-block;color:#c4b5fd;text-decoration:none;font-size:11px;font-weight:700;margin-top:12px}.link:hover{text-decoration:underline}
+.full-card{margin-top:16px}.list-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}.count{color:#70697a;font-size:10px;white-space:nowrap}.item{border-top:1px solid var(--line);padding:15px 0}.item:first-child{margin-top:4px}.item-title{display:flex;justify-content:space-between;gap:12px;align-items:center}.item-title strong{font-size:13px}.meta{display:flex;flex-wrap:wrap;gap:6px 14px;color:#777080;font-size:10px;margin-top:7px}.status{font-size:9px;font-weight:900;padding:4px 7px;border-radius:999px}.on{background:#102218;color:#63d992;border:1px solid #1d4930}.off{background:#211c10;color:var(--yellow);border:1px solid #4a3e20}.key-preview{font:10px ui-monospace,monospace;color:#81768e;margin-top:9px}.actions{display:flex;gap:7px;margin-top:10px}.actions form{flex:1}.actions button{background:#17121d;box-shadow:none;min-height:34px;padding:7px;font-size:10px}.actions .danger{color:#f49aa3;background:#211016}
+.empty{padding:28px 15px;text-align:center;color:#6f6878;font-size:11px;border:1px dashed #302a38;border-radius:10px}.key-alert{margin-top:16px;padding:17px;border:1px solid #275339;border-radius:13px;background:#0b1710}.success{color:#72e0a0;font-size:13px}.secret{font:11px ui-monospace,monospace;word-break:break-all;color:#c4b5fd;background:#08070b;border:1px solid #26352b;padding:11px;border-radius:8px;margin:10px 0}.copy{max-width:150px}
+.module{margin-top:16px}.module-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.module-box{border:1px solid var(--line);background:#0c0a10;border-radius:10px;padding:13px}.module-box b{font-size:11px}.module-box span{display:block;color:#66606d;font-size:10px;margin-top:4px}.locked{border-color:#332744}.lock-head{display:flex;justify-content:space-between;align-items:flex-start}.lock-icon{font-size:22px}.lock-note{color:#71697c;font-size:10px;margin-top:12px}
+.footer{text-align:center;color:#4f4857;font-size:10px;padding:25px}
+@media(max-width:900px){.sidebar{width:205px}.main{margin-left:205px;width:calc(100% - 205px)}.grid{grid-template-columns:1fr}.content{padding:24px}.top{padding:0 24px}}
+@media(max-width:680px){.sidebar{position:relative;width:100%;height:auto;bottom:auto;border-right:0;border-bottom:1px solid var(--line);padding:12px}.app{display:block}.main{margin:0;width:100%}.side-nav{grid-template-columns:repeat(3,1fr)}.side-bottom{display:none}.section-label{display:none}.brand{padding:4px 6px 10px}.top{position:relative;height:56px;padding:0 16px}.top-links a:first-child{display:none}.content{padding:20px 14px}.stats{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.title-row{align-items:flex-start;flex-direction:column}.module-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header class="topbar">
-  <div class="brand"><div class="logo">S</div><div><h1>Shadow API</h1><div class="muted">Central de gerenciamento</div></div></div>
-  <div class="top-actions"><a href="/docs">Documentação</a><a href="/admin/logout">Sair</a></div>
-</header>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="logo">S</div><div><strong>Shadow API</strong><span>Central de gerenciamento</span></div></div>
+  <div class="section-label">Principal</div>
+  <nav class="side-nav">
+    <a class="active" href="/admin"><span class="ico">⌂</span>Visão Geral</a>
+    <a href="#api"><span class="ico">◈</span>API</a>
+    <a href="#bot"><span class="ico">◆</span>Bot</a>
+    <a href="#mediador"><span class="ico">♢</span>Auto Mediador <span style="margin-left:auto">🔒</span></a>
+  </nav>
+  <div class="section-label">Recursos</div>
+  <nav class="side-nav">
+    <a href="/docs"><span class="ico">▤</span>Documentação</a>
+    <a href="/health"><span class="ico">●</span>Status</a>
+  </nav>
+  <div class="side-bottom">
+    <div class="account"><div class="avatar">S</div><div><b style="font-size:11px">Shadow</b><small>Administrador</small></div><a class="logout" href="/admin/logout">Sair</a></div>
+  </div>
+</aside>
 
-<nav class="nav"><a class="active" href="/admin">Visão Geral</a><a href="#api">API</a><a href="#bot">Bot</a><a href="#mediador">Auto Mediador 🔒</a><a href="/docs">Documentação</a><a href="/health">Status</a></nav>
+<main class="main">
+<header class="top"><div class="crumb">Painel / <b>Visão Geral</b></div><div class="top-links"><a href="/docs">Documentação ↗</a><a href="/health">● API online</a></div></header>
+<div class="content">
 
-<section id="api" class="hero"><h2>Shadow Panel</h2><p class="muted">Central da API de salas. Suas API Keys falam somente com a Shadow API; o token da Nix permanece privado no servidor.</p></section>
-<section id="bot" class="card" style="margin-bottom:18px"><h2>Bot</h2><p class="desc">Área preparada para integrar os recursos do Bot da Nix ao Shadow Panel.</p><div class="meta"><span>Visão Geral</span><span>Seu Bot</span><span>Configurações</span><span>Membros</span><span>Comissões</span></div></section>
-<section id="mediador" class="card" style="margin-bottom:18px;border-color:#3b2a52"><div class="item-title"><div><h2>Auto Mediador <span class="status off">INDISPONÍVEL</span></h2><p class="desc">Este módulo ficará bloqueado por enquanto. A integração completa dos recursos da Nix será adicionada ao Shadow Panel gradualmente.</p></div><span style="font-size:28px">🔒</span></div><div class="empty">🚧 Recurso em desenvolvimento<br><small>Em breve: Visão Geral, Como Funciona, Estatísticas e Meus Códigos.</small></div></section>
-<section class="hero"><h2>Olá, Shadow 👋</h2>
-  <p class="muted">Gerencie suas API Keys, acompanhe o uso e mantenha sua API de salas organizada em um só lugar.</p>
-</section>
+<div class="title-row">
+  <div><div class="eyebrow">Dashboard</div><h1>Visão geral</h1><p>Gerencie suas chaves e acompanhe a operação da Shadow API.</p></div>
+  <div class="status-pill"><span class="dot"></span> Serviço operacional</div>
+</div>
 
 <section class="stats">
-  <div class="stat"><div class="stat-head"><span class="muted">Total de chaves</span><span class="stat-icon">🔑</span></div><div class="num">{{keys|length}}</div></div>
-  <div class="stat"><div class="stat-head"><span class="muted">Chaves ativas</span><span class="stat-icon">✓</span></div><div class="num">{{active_count}}</div></div>
-  <div class="stat"><div class="stat-head"><span class="muted">Salas utilizadas</span><span class="stat-icon">◈</span></div><div class="num">{{rooms_used}}</div></div>
+  <div class="stat"><div class="stat-top"><span>Total de chaves</span><span class="stat-icon">🔑</span></div><div class="num">{{keys|length}}</div><div class="stat-foot">Chaves cadastradas</div></div>
+  <div class="stat"><div class="stat-top"><span>Chaves ativas</span><span class="stat-icon">✓</span></div><div class="num">{{active_count}}</div><div class="stat-foot">Prontas para requisições</div></div>
+  <div class="stat"><div class="stat-top"><span>Salas utilizadas</span><span class="stat-icon">◈</span></div><div class="num">{{rooms_used}}</div><div class="stat-foot">Total processado pela API</div></div>
 </section>
 
 <section class="grid">
-  <div class="card">
-    <h2>Nova API Key</h2>
-    <p class="desc">Crie uma chave para um cliente ou integração. A chave completa será mostrada somente uma vez.</p>
-    <form method="post" action="/admin/keys">
-      <div class="form-grid">
-        <div class="full"><input name="label" placeholder="Nome do cliente / integração" required></div>
-        <div><select name="days"><option value="1">1 dia</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">365 dias</option></select></div>
-        <div><input name="owner_user_id" placeholder="Discord User ID (opcional)"></div>
-        <div><input name="max_rooms" type="number" min="0" placeholder="Limite de salas"></div>
-        <div><input name="rate_limit" type="number" min="1" value="30" placeholder="Requests/min"></div>
-        <div class="full"><button>+ Criar API Key</button></div>
-      </div>
-      <div class="hint">Limite de salas vazio ou 0 = ilimitado.</div>
-    </form>
-  </div>
+<div class="card" id="api">
+  <h2>Criar nova API Key</h2><p class="desc">Crie uma credencial para um cliente ou integração. A chave completa será exibida apenas uma vez.</p>
+  <form method="post" action="/admin/keys">
+    <div class="form-grid">
+      <div class="full"><input name="label" placeholder="Nome do cliente ou integração" required></div>
+      <div><select name="days"><option value="1">1 dia</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="365">365 dias</option></select></div>
+      <div><input name="owner_user_id" placeholder="Discord User ID (opcional)"></div>
+      <div><input name="max_rooms" type="number" min="0" placeholder="Limite de salas"></div>
+      <div><input name="rate_limit" type="number" min="1" value="30" placeholder="Requests por minuto"></div>
+      <div class="full"><button>+ Criar API Key</button></div>
+    </div>
+  </form>
+  <div class="hint">Deixe o limite de salas vazio ou 0 para permitir uso ilimitado.</div>
+</div>
 
-  <div class="card">
-    <h2>Comece por aqui</h2>
-    <p class="desc">Integre sua aplicação em poucos passos.</p>
-    <pre>POST /v1/rooms
-X-API-Key: sk_sua_chave
-Content-Type: application/json</pre>
-    <a class="link" href="/docs">Abrir documentação completa →</a>
-  </div>
+<div class="card">
+  <h2>Integração rápida</h2><p class="desc">Sua aplicação usa a Shadow API. O token privado da Nix nunca é enviado ao cliente.</p>
+  <div class="endpoint"><span class="method">POST</span><strong>/v1/rooms</strong><p>Autenticação por <b>X-API-Key</b></p><div class="code">X-API-Key: sk_sua_chave
+Content-Type: application/json</div></div>
+  <a class="link" href="/docs">Ver documentação completa →</a>
+</div>
 </section>
 
 {% if new_key %}
 <section class="key-alert">
-  <h3 class="success">✓ API Key criada com sucesso</h3>
-  <p class="muted">Copie e guarde agora. Por segurança, a chave completa não será exibida novamente.</p>
-  <div class="key">{{new_key}}</div>
-  <button onclick="navigator.clipboard.writeText({{new_key|tojson}})">Copiar chave</button>
+  <div class="success">✓ API Key criada com sucesso</div>
+  <p class="desc" style="margin-top:6px">Guarde esta chave agora. Por segurança, ela não será exibida novamente.</p>
+  <div class="secret">{{new_key}}</div>
+  <button class="copy" onclick="navigator.clipboard.writeText({{new_key|tojson}})">Copiar chave</button>
 </section>
 {% endif %}
 
-<section class="card keys-card">
-  <div class="item-title"><div><h2>Entregas recebidas</h2><p class="desc">Vendas/webhooks recebidos e associados às API Keys.</p></div><span class="muted">{{deliveries|length}} recentes</span></div>
-  {% for d in deliveries %}
-  <div class="item">
-    <div class="item-title"><strong>{{d.external_username or d.external_user_id or "Cliente não informado"}}</strong><span class="status on">RECEBIDA</span></div>
-    <div class="meta">
-      <span>Venda: {{d.external_sale_id or "—"}}</span>
-      <span>Produto: {{d.product_name or "—"}}</span>
-      <span>Key ID: {{d.api_key_id or "não vinculada"}}</span>
-      <span>{{d.delivered_at or "—"}}</span>
-    </div>
+<section class="card full-card" id="bot">
+  <div class="list-head"><div><h2>Bot</h2><p class="desc">Estrutura preparada para integrar os recursos do Bot da Nix ao Shadow Panel.</p></div><span class="count">EM PREPARAÇÃO</span></div>
+  <div class="module-grid">
+    <div class="module-box"><b>Visão Geral</b><span>Indicadores e atividade do bot</span></div>
+    <div class="module-box"><b>Seu Bot</b><span>Gerenciamento e integração</span></div>
+    <div class="module-box"><b>Configurações</b><span>Preferências do servidor</span></div>
+    <div class="module-box"><b>Membros</b><span>Dados e gerenciamento</span></div>
   </div>
-  {% else %}
-  <div class="empty">Nenhuma entrega recebida ainda.</div>
-  {% endfor %}
 </section>
 
-<section class="card keys-card">
-  <div class="item-title"><div><h2>API Keys</h2><p class="desc">Chaves criadas neste painel e seus limites.</p></div><span class="muted">{{keys|length}} cadastradas</span></div>
+<section class="card full-card locked" id="mediador">
+  <div class="lock-head"><div><h2>Auto Mediador <span class="status off">INDISPONÍVEL</span></h2><p class="desc">Este módulo permanece bloqueado enquanto a integração dos recursos da Nix está sendo construída.</p></div><div class="lock-icon">🔒</div></div>
+  <div class="module-grid">
+    <div class="module-box"><b>Visão Geral</b><span>Em desenvolvimento</span></div>
+    <div class="module-box"><b>Como Funciona</b><span>Em desenvolvimento</span></div>
+    <div class="module-box"><b>Estatísticas</b><span>Em desenvolvimento</span></div>
+    <div class="module-box"><b>Meus Códigos</b><span>Em desenvolvimento</span></div>
+  </div>
+</section>
+
+<section class="card full-card">
+  <div class="list-head"><div><h2>Entregas recebidas</h2><p class="desc">Vendas e webhooks recebidos pela API.</p></div><span class="count">{{deliveries|length}} recentes</span></div>
+  {% for d in deliveries %}
+  <div class="item"><div class="item-title"><strong>{{d.external_username or d.external_user_id or "Cliente não informado"}}</strong><span class="status on">RECEBIDA</span></div><div class="meta"><span>Venda: {{d.external_sale_id or "—"}}</span><span>Produto: {{d.product_name or "—"}}</span><span>Key ID: {{d.api_key_id or "não vinculada"}}</span><span>{{d.delivered_at or "—"}}</span></div></div>
+  {% else %}<div class="empty">Nenhuma entrega recebida ainda.</div>{% endfor %}
+</section>
+
+<section class="card full-card">
+  <div class="list-head"><div><h2>API Keys</h2><p class="desc">Credenciais criadas neste painel, com seus limites e status.</p></div><span class="count">{{keys|length}} cadastradas</span></div>
   {% for k in keys %}
   <div class="item">
-    <div class="item-title">
-      <strong>{{k.label}}</strong>
-      {% if k.active %}<span class="status on">ATIVA</span>{% else %}<span class="status off">PAUSADA</span>{% endif %}
-    </div>
-    <div class="meta">
-      <span>ID {{k.id}}</span><span>Dono: {{k.owner_user_id or "—"}}</span><span>Expira: {{k.expires_at or "sem expiração"}}</span>
-      <span>Uso: {{k.rooms_used}}{% if k.max_rooms is not none %} / {{k.max_rooms}} salas{% else %} salas{% endif %}</span><span>{{k.rate_limit_per_minute}} req/min</span>
-    </div>
-    <div class="key">{{k.key_prefix}}••••••••••••••••</div>
-    <div class="actions">
-      <form method="post" action="/admin/keys/{{k.id}}/renew"><button>+30 dias</button></form>
-      <form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{"Pausar" if k.active else "Ativar"}}</button></form>
-      <form method="post" action="/admin/keys/{{k.id}}/delete" onsubmit="return confirm('Excluir esta API Key?')"><button class="danger">Excluir</button></form>
-    </div>
+    <div class="item-title"><strong>{{k.label}}</strong>{% if k.active %}<span class="status on">ATIVA</span>{% else %}<span class="status off">PAUSADA</span>{% endif %}</div>
+    <div class="meta"><span>ID {{k.id}}</span><span>Dono: {{k.owner_user_id or "—"}}</span><span>Expira: {{k.expires_at or "sem expiração"}}</span><span>Uso: {{k.rooms_used}}{% if k.max_rooms is not none %} / {{k.max_rooms}}{% endif %} salas</span><span>{{k.rate_limit_per_minute}} req/min</span></div>
+    <div class="key-preview">{{k.key_prefix}} ••••••••••••••••</div>
+    <div class="actions"><form method="post" action="/admin/keys/{{k.id}}/renew"><button>+30 dias</button></form><form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{"Pausar" if k.active else "Ativar"}}</button></form><form method="post" action="/admin/keys/{{k.id}}/delete" onsubmit="return confirm('Excluir esta API Key?')"><button class="danger">Excluir</button></form></div>
   </div>
-  {% else %}
-  <div class="empty">Nenhuma API Key criada ainda.<br>Crie a primeira usando o formulário acima.</div>
-  {% endfor %}
+  {% else %}<div class="empty">Nenhuma API Key criada ainda.<br>Crie a primeira usando o formulário acima.</div>{% endfor %}
 </section>
 
 <div class="footer">Shadow API • Painel administrativo</div>
-</div>
+</div></main></div>
 </body>
 </html>
 """
