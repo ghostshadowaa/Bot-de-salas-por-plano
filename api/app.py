@@ -33,7 +33,7 @@ DASHBOARD_HTML = """<!doctype html><html lang="pt-BR"><meta charset="utf-8"><met
 <header><h1>🟣 Shadow API</h1><a href="/admin/logout">Sair</a></header>
 <div class="grid">
 <div class="card"><h2>Criar chave</h2><form method="post" action="/admin/keys"><input name="label" placeholder="Nome do cliente" required><div><button type="button" onclick="d(1)">1 dia</button><button type="button" onclick="d(7)">1 semana</button><button type="button" onclick="d(30)">1 mês</button></div><input type="hidden" name="days" id="days" value="1"><input name="owner_user_id" placeholder="Discord User ID do dono"><input name="max_rooms" type="number" min="0" placeholder="Limite de salas (0 = ilimitado)"><button>Criar chave</button></form></div>
-<div class="card"><h2>Produtos Olivery</h2><p class="muted">O product_id recebido no POST escolhe a duração.</p><form method="post" action="/admin/products"><input name="product_id" placeholder="ID do produto" required><input name="name" placeholder="Nome do produto" required><input name="duration_days" type="number" min="1" placeholder="Dias" required><button>Salvar produto</button></form>{% for p in products %}<p><b>{{p.name}}</b> — ID <span class="key">{{p.product_id}}</span> — {{p.duration_days}} dias — {{'ativo' if p.active else 'pausado'}} <form method="post" action="/admin/products/{{p.id}}/toggle"><button>Alternar</button></form></p>{% endfor %}</div>
+<div class="card"><h2>Produtos AG Solutions</h2><p class="muted">O product_id recebido no POST escolhe a duração.</p><form method="post" action="/admin/products"><input name="product_id" placeholder="ID do produto" required><input name="name" placeholder="Nome do produto" required><input name="duration_days" type="number" min="1" placeholder="Dias" required><button>Salvar produto</button></form>{% for p in products %}<p><b>{{p.name}}</b> — ID <span class="key">{{p.product_id}}</span> — {{p.duration_days}} dias — {{'ativo' if p.active else 'pausado'}} <form method="post" action="/admin/products/{{p.id}}/toggle"><button>Alternar</button></form></p>{% endfor %}</div>
 </div>
 {% if new_key %}<div class="card"><h2>🔑 Chave criada</h2><p class="key">{{new_key}}</p><button onclick="navigator.clipboard.writeText({{new_key|tojson}})">Copiar</button></div>{% endif %}
 <div class="card"><h2>Chaves</h2>{% for k in keys %}<div class="card"><b>{{k.label}}</b> — {{'ATIVA' if k.active else 'PAUSADA'}}<br><span class="muted">Dono: {{k.owner_user_id or '—'}} · Produto: {{k.product_id or 'manual'}} · Expira: {{k.expires_at or '—'}}</span><br><span class="key">{{k.key_prefix}}••••••••</span><form method="post" action="/admin/keys/{{k.id}}/renew"><button>Renovar 30d</button></form><form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{'Ativar' if not k.active else 'Pausar'}}</button></form><form method="post" action="/admin/keys/{{k.id}}/delete"><button>Excluir</button></form></div>{% else %}<p>Nenhuma chave.</p>{% endfor %}</div>
@@ -88,7 +88,7 @@ def log_event(kid,typ,code,payload,response=None):
     db.table("api_key_events").insert({"api_key_id":kid,"event_type":typ,"endpoint":request.path,"status_code":code,"request_body":payload,"response_body":response}).execute()
 
 @app.get("/")
-def home(): return jsonify({"ok":True,"service":"Shadow API","automation":"POST /automation/olivery","rooms":"POST /v1/rooms"})
+def home(): return jsonify({"ok":True,"service":"Shadow API","automation":"POST /automation/ag-solutions","rooms":"POST /v1/rooms"})
 @app.get("/health")
 def health(): return jsonify({"ok":True})
 @app.post("/v1/rooms")
@@ -109,8 +109,8 @@ def rooms():
     except requests.RequestException:
         return jsonify({"error":"Falha ao comunicar com o provedor"}),502
 
-@app.post("/automation/olivery")
-def olivery():
+@app.post("/automation/ag-solutions")
+def ag_solutions_automation():
     if not authorized(): return jsonify({"ok":False,"error":"Automação não autorizada"}),401
     payload=body(); sale=extract_sale(payload)
     if not sale["product_id"]: return jsonify({"ok":False,"error":"product_id não encontrado no POST"}),400
