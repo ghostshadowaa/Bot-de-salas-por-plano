@@ -314,8 +314,6 @@ Content-Type: application/json</pre><p class="muted">A chave é armazenada no ba
 
 @app.get("/")
 def home():
-    if admin() or discord_user():
-        return redirect("/admin")
     return render_template_string(HOME_HTML)
 
 @app.post("/")
@@ -510,7 +508,9 @@ def admin_create_room():
 
 @app.get("/login")
 def login():
-    if admin() or discord_user():
+    if discord_user():
+        return redirect("/dashboard")
+    if admin():
         return redirect("/admin")
     if not (DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET and DISCORD_REDIRECT_URI):
         return render_template_string(LOGIN_HTML, error="Login com Discord ainda não foi configurado no servidor."), 503
@@ -550,12 +550,18 @@ def discord_callback():
         session.permanent = True
         session["discord_user"] = user.json()
         session["login_at"] = iso(now())
-        return redirect("/admin")
+        return redirect("/dashboard")
     except (requests.RequestException, KeyError, ValueError):
         return render_template_string(LOGIN_HTML, error="Não foi possível concluir o login com Discord."), 502
 
 
-@app.post("/login")
+@app.get("/admin/login")
+def admin_login():
+    if admin():
+        return redirect("/admin")
+    return render_template_string(LOGIN_HTML, error=request.args.get("error"))
+
+@app.post("/admin/login")
 def login_post():
     username = request.form.get("username", "")
     password = request.form.get("password", "")
@@ -576,11 +582,48 @@ def login_post():
     return render_template_string(LOGIN_HTML, error="Usuário ou senha inválidos."), 401
 
 
+@app.get("/logout")
+def user_logout():
+    session.clear()
+    return redirect("/")
+
 @app.get("/admin/logout")
 def logout():
     session.clear()
-    return redirect("/login")
+    return redirect("/")
 
+
+
+USER_DASHBOARD_HTML = """
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shadow API • Dashboard</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#070b16;color:#e5eefc;font-family:Inter,system-ui,Arial}.wrap{max-width:1100px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 18px;border:1px solid #1e293b;border-radius:18px;background:#0d1426}.brand{font-weight:900;font-size:20px}.actions{display:flex;gap:10px;flex-wrap:wrap}a{color:inherit;text-decoration:none}.btn{padding:10px 14px;border-radius:12px;border:1px solid #334155;background:#111827}.primary{background:#7c3aed;border-color:#7c3aed;font-weight:800}.danger{border-color:#7f1d1d;color:#fca5a5}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}.card,.panel{padding:18px;border:1px solid #1e293b;border-radius:18px;background:#0d1426}.muted{color:#94a3b8}.metric{font-size:28px;font-weight:900;margin-top:7px}.panel{margin-top:18px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #1e293b}.row:last-child{border-bottom:0}.tag{padding:5px 9px;border-radius:999px;font-size:12px;background:#14532d;color:#bbf7d0}@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.top{align-items:flex-start;flex-direction:column}}@media(max-width:500px){.grid{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<header class="top"><div><div class="brand">🟣 Shadow API</div><div class="muted">Dashboard do usuário</div></div>
+<div class="actions"><a class="btn" href="/docs">Documentação</a><a class="btn danger" href="/logout">↪ Sair da conta</a></div></header>
+<div class="grid">
+<div class="card"><div class="muted">Discord</div><div class="metric">{{ user.get("global_name") or user.get("username") or "Usuário" }}</div></div>
+<div class="card"><div class="muted">API Keys</div><div class="metric">{{ keys|length }}</div></div>
+<div class="card"><div class="muted">Keys ativas</div><div class="metric">{{ active_count }}</div></div>
+<div class="card"><div class="muted">Salas usadas</div><div class="metric">{{ rooms_used }}</div></div>
+</div>
+<section class="panel"><h2>Minhas API Keys</h2><p class="muted">Somente chaves vinculadas ao seu Discord aparecem aqui.</p>
+{% if keys %}{% for k in keys %}<div class="row"><div><b>{{ k.label }}</b><div class="muted">{{ k.key_prefix }}•••• · Saldo R$ {{ "%.2f"|format((k.balance_cents or 0)/100) }}</div></div><span class="tag">{{ "Ativa" if k.active else "Pausada" }}</span></div>{% endfor %}{% else %}<p class="muted">Nenhuma API Key vinculada à sua conta ainda. Um administrador pode criar uma vinculada ao seu Discord User ID.</p>{% endif %}
+</section><section class="panel"><h2>Salas</h2><p class="muted">A criação de salas pela API usa uma API Key vinculada à sua conta e desconta R$ 0,05 por criação bem-sucedida.</p><a class="btn primary" href="/docs">Ver documentação da API</a></section>
+</div></body></html>
+"""
+
+@app.get("/dashboard")
+def user_dashboard():
+    user = discord_user()
+    if not user:
+        return redirect("/login")
+    discord_id = str(user.get("id", ""))
+    keys = db.table("api_keys").select("*").eq("owner_user_id", discord_id).order("created_at", desc=True).execute().data or []
+    active_count = sum(1 for item in keys if valid_key(item))
+    rooms_used = sum(int(item.get("rooms_used") or 0) for item in keys)
+    return render_template_string(USER_DASHBOARD_HTML, user=user, keys=keys, active_count=active_count, rooms_used=rooms_used)
 
 @app.get("/admin")
 def dashboard():
