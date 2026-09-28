@@ -20,6 +20,7 @@ NIX_AUTH_HEADER = os.environ.get("NIX_AUTH_HEADER", "Authorization")
 NIX_AUTH_PREFIX = os.environ.get("NIX_AUTH_PREFIX", "Bearer ")
 ADMIN_USERNAME = os.environ.get("PANEL_USERNAME", os.environ.get("ADMIN_USERNAME", "Shadow"))
 ADMIN_PASSWORD_HASH = os.environ.get("PANEL_PASSWORD_HASH", os.environ.get("ADMIN_PASSWORD_HASH", ""))
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL e SUPABASE_KEY precisam estar configurados.")
@@ -162,7 +163,8 @@ def login_page():
 def login():
     username = request.form.get("username", "")
     password = request.form.get("password", "")
-    if username == ADMIN_USERNAME and ADMIN_PASSWORD_HASH and check_password_hash(ADMIN_PASSWORD_HASH, password):
+    password_ok = (ADMIN_PASSWORD_HASH and check_password_hash(ADMIN_PASSWORD_HASH, password)) or (ADMIN_PASSWORD and secrets.compare_digest(password, ADMIN_PASSWORD))
+    if username == ADMIN_USERNAME and password_ok:
         session["admin"] = True
         return redirect(url_for("dashboard"))
     return render_template_string(LOGIN_HTML, error="Usuário ou senha inválidos."), 401
