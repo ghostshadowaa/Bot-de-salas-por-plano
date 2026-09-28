@@ -97,7 +97,7 @@ def extract_sales(data):
     return sales
 
 def authorized():
-    secret=os.environ.get("OLIVERY_WEBHOOK_SECRET","")
+    secret=os.environ.get("AG_SOLUTIONS_WEBHOOK_SECRET", os.environ.get("OLIVERY_WEBHOOK_SECRET",""))
     supplied=request.headers.get("X-Automation-Secret","")
     if not supplied and request.headers.get("Authorization","").lower().startswith("bearer "): supplied=request.headers["Authorization"][7:].strip()
     return bool(secret) and secrets.compare_digest(supplied,secret)
