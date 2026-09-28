@@ -541,6 +541,7 @@ def dashboard():
         active_count=active,
         rooms_used=rooms_used,
         deliveries=deliveries,
+        total_balance_cents=sum(int(item.get("balance_cents") or 0) for item in keys),
         new_key=session.pop("new_key", None),
     )
 
