@@ -32,7 +32,7 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")
 DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET", "")
 DISCORD_REDIRECT_URI = os.environ.get("DISCORD_REDIRECT_URI", "")
-AG_SOLUTIONS_WEBHOOK_SECRET = os.environ.get("AG_SOLUTIONS_WEBHOOK_SECRET", "")
+ADMIN_DISCORD_USER_IDS = {item.strip() for item in os.environ.get("ADMIN_DISCORD_USER_IDS", "").split(",") if item.strip()}
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL e SUPABASE_KEY precisam estar configurados.")
@@ -75,6 +75,12 @@ def admin():
 def discord_user():
     return session.get("discord_user")
 
+
+
+def discord_account_type(discord_user_id):
+    if discord_user_id and str(discord_user_id) in ADMIN_DISCORD_USER_IDS:
+        return "admin"
+    return "user"
 
 def create_key(label, days, owner=None, max_rooms=None, rate_limit=30):
     raw = make_key()
@@ -453,11 +459,21 @@ def ag_webhook_root():
         return jsonify({"ok": False, "error": "O corpo do webhook deve ser JSON"}), 400
     try:
         delivery = register_delivery(payload)
+        discord_user_id = (payload.get("discord_user_id") or payload.get("discordId"))
+        if not discord_user_id:
+            for key in ("user", "customer", "buyer"):
+                obj = payload.get(key)
+                if isinstance(obj, dict):
+                    discord_user_id = obj.get("discord_user_id") or obj.get("discordId")
+                    if discord_user_id:
+                        break
         return jsonify({
             "ok": True,
             "received": True,
             "delivery_id": delivery.get("id") if delivery else None,
             "api_key_linked": bool(delivery and delivery.get("api_key_id")),
+            "discord_user_id": str(discord_user_id) if discord_user_id else None,
+            "account_type": discord_account_type(discord_user_id),
         }), 200
     except Exception:
         return jsonify({"ok": False, "error": "Falha ao registrar webhook"}), 500
@@ -914,112 +930,6 @@ def user_create_room():
         session["room_result"] = {"ok": False, "status": 502, "error": "Não foi possível conectar à API da Nix."}
 
     return redirect("/dashboard#rooms")
-@app.post("/webhook/ag-solutions/payment")
-def ag_solutions_payment_webhook():
-    """
-    Recebe a confirmação de pagamento do sistema da AG Solutions.
-    O webhook deve enviar o Discord ID do comprador e o valor pago.
-    """
-    configured_secret = AG_SOLUTIONS_WEBHOOK_SECRET
-    received_secret = request.headers.get("X-AG-Solutions-Secret", "")
-    if not configured_secret or not secrets.compare_digest(received_secret, configured_secret):
-        return jsonify({"ok": False, "error": "Unauthorized"}), 401
-
-    payload = request.get_json(silent=True)
-    if not isinstance(payload, dict):
-        return jsonify({"ok": False, "error": "JSON inválido"}), 400
-
-    status = str(
-        payload.get("status")
-        or payload.get("payment_status")
-        or payload.get("paymentStatus")
-        or payload.get("state")
-        or ""
-    ).strip().lower()
-
-    paid_statuses = {"paid", "approved", "completed", "confirmed", "success", "succeeded"}
-    failed_statuses = {"failed", "cancelled", "canceled", "expired", "refused", "rejected", "denied"}
-
-    if status in failed_statuses:
-        return jsonify({"ok": True, "credited": False, "status": status}), 200
-
-    if status not in paid_statuses:
-        return jsonify({"ok": False, "error": "Status de pagamento não reconhecido", "status": status}), 400
-
-    user = payload.get("user") if isinstance(payload.get("user"), dict) else {}
-    customer = payload.get("customer") if isinstance(payload.get("customer"), dict) else {}
-    buyer = payload.get("buyer") if isinstance(payload.get("buyer"), dict) else {}
-
-    discord_user_id = (
-        payload.get("discord_user_id")
-        or payload.get("user_id")
-        or payload.get("discordId")
-        or user.get("discord_user_id")
-        or user.get("discordId")
-        or customer.get("discord_user_id")
-        or customer.get("discordId")
-        or buyer.get("discord_user_id")
-        or buyer.get("discordId")
-    )
-
-    payment_id = (
-        payload.get("payment_id")
-        or payload.get("paymentId")
-        or payload.get("transaction_id")
-        or payload.get("transactionId")
-        or payload.get("order_id")
-        or payload.get("orderId")
-        or payload.get("id")
-    )
-
-    raw_amount = (
-        payload.get("amount_cents")
-        if payload.get("amount_cents") is not None
-        else payload.get("amount")
-    )
-
-    try:
-        amount_value = float(str(raw_amount).replace(",", "."))
-    except (TypeError, ValueError):
-        amount_value = 0
-
-    # AG Solutions normalmente pode enviar amount em reais.
-    # Se o campo vier como amount_cents, ele é tratado diretamente como centavos.
-    if payload.get("amount_cents") is not None:
-        amount_cents = int(round(amount_value))
-    else:
-        amount_cents = int(round(amount_value * 100))
-
-    if not discord_user_id:
-        return jsonify({"ok": False, "error": "Discord ID do comprador não informado"}), 400
-    if not payment_id:
-        return jsonify({"ok": False, "error": "ID do pagamento não informado"}), 400
-    if amount_cents <= 0:
-        return jsonify({"ok": False, "error": "Valor do pagamento inválido"}), 400
-
-    try:
-        credited = db.rpc(
-            "credit_wallet",
-            {
-                "p_user_id": str(discord_user_id),
-                "p_amount_cents": amount_cents,
-                "p_external_payment_id": f"ag:{payment_id}",
-                "p_description": "Depósito Pix via AG Solutions",
-            },
-        ).execute()
-        credited = bool(credited.data)
-    except Exception:
-        return jsonify({"ok": False, "error": "Não foi possível registrar o crédito"}), 500
-
-    return jsonify({
-        "ok": True,
-        "credited": credited,
-        "discord_user_id": str(discord_user_id),
-        "payment_id": str(payment_id),
-        "amount_cents": amount_cents,
-        "status": status,
-    }), 200
-
 @app.post("/dashboard/deposit")
 def user_deposit():
     user = discord_user()
