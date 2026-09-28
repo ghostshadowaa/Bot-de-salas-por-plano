@@ -112,8 +112,11 @@ def log_event(kid,typ,code,payload,response=None):
     db.table("api_key_events").insert({"api_key_id":kid,"event_type":typ,"endpoint":request.path,"status_code":code,"request_body":payload,"response_body":response}).execute()
 
 @app.get("/")
+@app.get("/admin/")
 def home():
-    return redirect("/admin")
+    if session.get("admin"):
+        return redirect("/admin")
+    return render_template_string(LOGIN_HTML, error=None)
 @app.get("/health")
 def health(): return jsonify({"ok":True})
 @app.post("/v1/rooms")
@@ -221,6 +224,10 @@ def ag_solutions_automation():
         "buyer": (payload.get("data") or {}).get("user"),
         "results": results,
     }), 201 if any(x.get("ok") for x in results) else 422
+
+@app.get("/admin/login/")
+def login_slash():
+    return login()
 
 @app.get("/admin/login")
 def login():
