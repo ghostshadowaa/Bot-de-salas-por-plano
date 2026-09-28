@@ -95,6 +95,15 @@ def log_event(key_id, event_type, status_code, payload, response):
     }).execute()
 
 
+def reserve_room_credit(key_id):
+    result = db.rpc("reserve_room_credit", {"p_key_id": int(key_id)}).execute()
+    return bool(result.data)
+
+
+def refund_room_credit(key_id):
+    db.rpc("refund_room_credit", {"p_key_id": int(key_id)}).execute()
+
+
 def find_key_by_raw(raw):
     if not raw:
         return None
@@ -294,7 +303,7 @@ Content-Type: application/json</div></div>
   {% for k in keys %}
   <div class="item">
     <div class="item-title"><strong>{{k.label}}</strong>{% if k.active %}<span class="status on">ATIVA</span>{% else %}<span class="status off">PAUSADA</span>{% endif %}</div>
-    <div class="meta"><span>ID {{k.id}}</span><span>Dono: {{k.owner_user_id or "—"}}</span><span>Expira: {{k.expires_at or "sem expiração"}}</span><span>Uso: {{k.rooms_used}}{% if k.max_rooms is not none %} / {{k.max_rooms}}{% endif %} salas</span><span>{{k.rate_limit_per_minute}} req/min</span></div>
+    <div class="meta"><span>ID {{k.id}}</span><span>Dono: {{k.owner_user_id or "—"}}</span><span>Expira: {{k.expires_at or "sem expiração"}}</span><span>Uso: {{k.rooms_used}}{% if k.max_rooms is not none %} / {{k.max_rooms}}{% endif %} salas</span><span>Saldo: R$ {{"%.2f"|format((k.balance_cents or 0) / 100)}}</span><span>{{k.rate_limit_per_minute}} req/min</span></div>
     <div class="key-preview">{{k.key_prefix}} ••••••••••••••••</div>
     <div class="actions"><form method="post" action="/admin/keys/{{k.id}}/renew"><button>+30 dias</button></form><form method="post" action="/admin/keys/{{k.id}}/toggle"><button>{{"Pausar" if k.active else "Ativar"}}</button></form><form method="post" action="/admin/keys/{{k.id}}/delete" onsubmit="return confirm('Excluir esta API Key?')"><button class="danger">Excluir</button></form></div>
   </div>
@@ -313,7 +322,7 @@ DOCS_HTML = """
 *{box-sizing:border-box}body{margin:0;background:#08060d;color:#f5f3ff;font-family:Inter,system-ui,Arial}.wrap{max-width:1000px;margin:auto;padding:22px}
 .card{background:#110d1b;border:1px solid #292033;border-radius:18px;padding:20px;margin:14px 0}.muted{color:#a49caf}a{color:#c4b5fd;text-decoration:none}code,pre{background:#0b0710;border:1px solid #292033;border-radius:10px}code{padding:2px 5px}pre{padding:14px;overflow:auto;white-space:pre-wrap}.method{color:#a78bfa;font-weight:900}
 </style></head><body><div class="wrap"><a href="/admin">← Dashboard</a><h1>Shadow API — Documentação</h1>
-<p class="muted">API própria da Shadow para criação de salas. Não depende de plataforma de vendas ou automação externa.</p>
+<p class="muted">API própria da Shadow para criação de salas. Cada sala criada com sucesso consome R$ 0,05 do saldo da API Key.</p>
 <div class="card"><h2>Base URL</h2><pre>{{base_url}}</pre></div>
 <div class="card"><h2>Autenticação</h2><p>Envie sua chave em todas as requisições protegidas:</p><pre>X-API-Key: sk_sua_chave
 Content-Type: application/json</pre><p class="muted">A chave é armazenada no banco somente como hash.</p></div>
@@ -403,7 +412,20 @@ def rooms():
     if not isinstance(payload, dict):
         return jsonify({"error": "O corpo deve ser JSON"}), 400
 
+    # Cada criação de sala custa R$ 0,05.
+    # O valor é reservado antes da chamada para impedir que duas requisições
+    # concorrentes criem salas sem saldo. Se a Nix não criar a sala,
+    # o valor é devolvido automaticamente.
     try:
+        if not reserve_room_credit(key["id"]):
+            response = {
+                "error": "Saldo insuficiente",
+                "required_cents": 5,
+                "balance_cents": int(key.get("balance_cents") or 0),
+            }
+            log_event(key["id"], "room_request", 402, payload, response)
+            return jsonify(response), 402
+
         # A API Key Shadow nunca é enviada para a Nix.
         # O cliente fala somente com a Shadow API; a Shadow usa o token
         # privado do Render para chamar diretamente POST /rooms da Nix.
@@ -456,9 +478,13 @@ def rooms():
                 "rooms_used": int(key.get("rooms_used") or 0) + 1,
                 "last_used_at": iso(now()),
             }).eq("id", key["id"]).execute()
+        else:
+            # A sala não foi criada com sucesso: devolve os R$ 0,05 reservados.
+            refund_room_credit(key["id"])
 
         return jsonify(response), upstream.status_code
     except requests.RequestException:
+        refund_room_credit(key["id"])
         response = {"error": "Falha ao comunicar com o provedor"}
         log_event(key["id"], "room_request", 502, payload, response)
         return jsonify(response), 502
