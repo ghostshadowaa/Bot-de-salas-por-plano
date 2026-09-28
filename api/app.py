@@ -14,9 +14,10 @@ app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-render")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 NIX_API_TOKEN = os.environ.get("NIX_API_TOKEN", "")
-NIX_ROOMS_URL = os.environ.get("NIX_ROOMS_URL", "https://salas.nixbot.vip/rooms")
-NIX_AUTH_HEADER = os.environ.get("NIX_AUTH_HEADER", "Authorization")
-NIX_AUTH_PREFIX = os.environ.get("NIX_AUTH_PREFIX", "Bearer ")
+NIX_BASE_URL = os.environ.get("NIX_BASE_URL", "https://salas.nixbot.vip").rstrip("/")
+NIX_ROOMS_URL = f"{NIX_BASE_URL}/rooms"
+NIX_AUTH_HEADER = "Authorization"
+NIX_AUTH_PREFIX = "Bearer "
 ADMIN_USERNAME = os.environ.get("PANEL_USERNAME", os.environ.get("ADMIN_USERNAME", "Shadow"))
 ADMIN_PASSWORD_HASH = os.environ.get("PANEL_PASSWORD_HASH", os.environ.get("ADMIN_PASSWORD_HASH", ""))
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
@@ -393,12 +394,46 @@ def rooms():
         return jsonify({"error": "O corpo deve ser JSON"}), 400
 
     try:
-        upstream = requests.post(
-            NIX_ROOMS_URL,
-            json=payload,
-            headers={NIX_AUTH_HEADER: NIX_AUTH_PREFIX + NIX_API_TOKEN},
-            timeout=30,
-        )
+        # A API Key Shadow nunca é enviada para a Nix.
+        # O cliente fala somente com a Shadow API; a Shadow usa o token
+        # privado do Render para chamar diretamente POST /rooms da Nix.
+        headers = {
+            "Authorization": f"Bearer {NIX_API_TOKEN}",
+            "Content-Type": "application/json",
+        }
+
+        upstream = None
+        last_error = None
+
+        # Mesmo comportamento do bot original: retry limitado apenas
+        # para erros de servidor/infraestrutura da Nix.
+        for attempt in range(1, 5):
+            try:
+                upstream = requests.post(
+                    NIX_ROOMS_URL,
+                    json=payload,
+                    headers=headers,
+                    timeout=15,
+                )
+
+                if upstream.status_code not in (502, 503, 504, 524):
+                    break
+
+                if attempt < 4:
+                    import time
+                    time.sleep(min(5 * attempt, 20))
+
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt < 4:
+                    import time
+                    time.sleep(min(5 * attempt, 20))
+
+        if upstream is None:
+            response = {"error": "Não foi possível conectar à API da Nix"}
+            log_event(key["id"], "room_request", 502, payload, response)
+            return jsonify(response), 502
+
         try:
             response = upstream.json()
         except ValueError:
