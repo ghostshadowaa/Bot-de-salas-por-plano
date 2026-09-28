@@ -201,10 +201,12 @@ pre{white-space:pre-wrap;background:#09070d;border:1px solid var(--border);borde
   <div class="top-actions"><a href="/docs">Documentação</a><a href="/admin/logout">Sair</a></div>
 </header>
 
-<nav class="nav"><a class="active" href="/admin">Dashboard</a><a href="/docs">API Docs</a><a href="/health">Status</a></nav>
+<nav class="nav"><a class="active" href="/admin">Visão Geral</a><a href="#api">API</a><a href="#bot">Bot</a><a href="#mediador">Auto Mediador 🔒</a><a href="/docs">Documentação</a><a href="/health">Status</a></nav>
 
-<section class="hero">
-  <h2>Olá, Shadow 👋</h2>
+<section id="api" class="hero"><h2>Shadow Panel</h2><p class="muted">Central da API de salas. Suas API Keys falam somente com a Shadow API; o token da Nix permanece privado no servidor.</p></section>
+<section id="bot" class="card" style="margin-bottom:18px"><h2>Bot</h2><p class="desc">Área preparada para integrar os recursos do Bot da Nix ao Shadow Panel.</p><div class="meta"><span>Visão Geral</span><span>Seu Bot</span><span>Configurações</span><span>Membros</span><span>Comissões</span></div></section>
+<section id="mediador" class="card" style="margin-bottom:18px;border-color:#3b2a52"><div class="item-title"><div><h2>Auto Mediador <span class="status off">INDISPONÍVEL</span></h2><p class="desc">Este módulo ficará bloqueado por enquanto. A integração completa dos recursos da Nix será adicionada ao Shadow Panel gradualmente.</p></div><span style="font-size:28px">🔒</span></div><div class="empty">🚧 Recurso em desenvolvimento<br><small>Em breve: Visão Geral, Como Funciona, Estatísticas e Meus Códigos.</small></div></section>
+<section class="hero"><h2>Olá, Shadow 👋</h2>
   <p class="muted">Gerencie suas API Keys, acompanhe o uso e mantenha sua API de salas organizada em um só lugar.</p>
 </section>
 
