@@ -211,7 +211,7 @@ html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text)
     <a class="active" href="/admin"><span class="ico">⌂</span>Visão Geral</a>
     <a href="#api"><span class="ico">◈</span>API</a>
     <a href="#bot"><span class="ico">◆</span>Bot</a>
-    <a href="#mediador"><span class="ico">♢</span>Auto Mediador <span style="margin-left:auto">🔒</span></a>
+    <a href="#hosting"><span class="ico">▣</span>Hospedagem de Bots <span style="margin-left:auto">🔒</span></a><a href="#mediador"><span class="ico">♢</span>Auto Mediador <span style="margin-left:auto">🔒</span></a>
   </nav>
   <div class="section-label">Recursos</div>
   <nav class="side-nav">
@@ -228,14 +228,14 @@ html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text)
 <div class="content">
 
 <div class="title-row">
-  <div><div class="eyebrow">Dashboard</div><h1>Visão geral</h1><p>Gerencie suas chaves e acompanhe a operação da Shadow API.</p></div>
+  <div><div class="eyebrow">Dashboard</div><h1>Visão geral</h1><p>Gerencie suas chaves, saldo e acompanhe a operação da Shadow API.</p></div>
   <div class="status-pill"><span class="dot"></span> Serviço operacional</div>
 </div>
 
 <section class="stats">
   <div class="stat"><div class="stat-top"><span>Total de chaves</span><span class="stat-icon">🔑</span></div><div class="num">{{keys|length}}</div><div class="stat-foot">Chaves cadastradas</div></div>
   <div class="stat"><div class="stat-top"><span>Chaves ativas</span><span class="stat-icon">✓</span></div><div class="num">{{active_count}}</div><div class="stat-foot">Prontas para requisições</div></div>
-  <div class="stat"><div class="stat-top"><span>Salas utilizadas</span><span class="stat-icon">◈</span></div><div class="num">{{rooms_used}}</div><div class="stat-foot">Total processado pela API</div></div>
+  <div class="stat"><div class="stat-top"><span>Salas utilizadas</span><span class="stat-icon">◈</span></div><div class="num">{{rooms_used}}</div><div class="stat-foot">Cada sala bem-sucedida custa R$ 0,05</div></div>
 </section>
 
 <section class="grid">
@@ -280,6 +280,8 @@ Content-Type: application/json</div></div>
     <div class="module-box"><b>Membros</b><span>Dados e gerenciamento</span></div>
   </div>
 </section>
+
+<section class="card full-card locked" id="hosting"><div class="lock-head"><div><h2>Hospedagem de Bots <span class="status off">INDISPONÍVEL</span></h2><p class="desc">Este módulo está reservado para uma futura etapa do Shadow Panel.</p></div><div class="lock-icon">🔒</div></div><div class="module-grid"><div class="module-box"><b>Criar hospedagem</b><span>Indisponível</span></div><div class="module-box"><b>Seus bots</b><span>Indisponível</span></div><div class="module-box"><b>Planos</b><span>Indisponível</span></div><div class="module-box"><b>Recursos</b><span>Indisponível</span></div></div></section>
 
 <section class="card full-card locked" id="mediador">
   <div class="lock-head"><div><h2>Auto Mediador <span class="status off">INDISPONÍVEL</span></h2><p class="desc">Este módulo permanece bloqueado enquanto a integração dos recursos da Nix está sendo construída.</p></div><div class="lock-icon">🔒</div></div>
