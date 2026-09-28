@@ -10,6 +10,10 @@ from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-render")
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
@@ -506,7 +510,10 @@ def login_post():
         valid_password = secrets.compare_digest(password, ADMIN_PASSWORD)
 
     if username == ADMIN_USERNAME and valid_password:
+        session.clear()
+        session.permanent = True
         session["admin"] = True
+        session["login_at"] = iso(now())
         return redirect("/admin")
 
     return render_template_string(LOGIN_HTML, error="Usuário ou senha inválidos."), 401
