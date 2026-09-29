@@ -222,6 +222,33 @@ def asaas_customer_for_user(user_id, customer_name, cpf_cnpj):
     return str(customer_id)
 
 
+def get_active_deposit_payment(user_id):
+    rows = db.table("wallet_transactions").select("*").eq("user_id", str(user_id)).eq("type", "deposit").eq("status", "pending").order("created_at", desc=True).limit(10).execute().data or []
+    for tx in rows:
+        payment_id = tx.get("external_payment_id")
+        if not payment_id:
+            continue
+        try:
+            response = requests.get(f"{ASAAS_BASE_URL}/payments/{urllib.parse.quote(str(payment_id), safe='')}", headers=asaas_headers(), timeout=20)
+            data = response.json()
+        except (requests.RequestException, ValueError):
+            continue
+        if not 200 <= response.status_code < 300:
+            continue
+        status = str(data.get("status") or "").upper()
+        if status in {"RECEIVED", "CONFIRMED"}:
+            db.table("wallet_transactions").update({"status":"confirmed","confirmed_at":iso(now())}).eq("id", tx["id"]).execute()
+            continue
+        due_date = str(data.get("dueDate") or "")
+        if status == "PENDING" and due_date >= now().date().isoformat():
+            qr = requests.get(f"{ASAAS_BASE_URL}/payments/{urllib.parse.quote(str(payment_id), safe='')}/pixQrCode", headers=asaas_headers(), timeout=20)
+            try: qr_data = qr.json()
+            except ValueError: continue
+            if 200 <= qr.status_code < 300:
+                return {"id":payment_id,"status":data.get("status"),"value":data.get("value"),"invoiceUrl":data.get("invoiceUrl"),"pix":qr_data}
+    return None
+
+
 def create_deposit_payment(user_id, amount_cents, customer_name, cpf_cnpj):
     customer_id = asaas_customer_for_user(user_id, customer_name, cpf_cnpj)
     external_reference = f"shadow:{user_id}:{secrets.token_hex(8)}"
@@ -353,29 +380,8 @@ h1{margin:0 0 6px}.muted{color:#a49caf}input,button{width:100%;padding:12px;bord
 </style></head><body><div class="card"><h1>🟣 Shadow API</h1><p class="muted">Painel administrativo da API</p>
 <form method="post"><input name="username" placeholder="Usuário" required><input name="password" type="password" placeholder="Senha" required><button>Entrar</button></form>
 {% if error %}<div class="err">{{error}}</div>{% endif %}</div><script>
-function copyPixPayload(){
-  const el=document.getElementById("pix-payload");
-  if(!el) return;
-  const value=el.value;
-  if(navigator.clipboard && window.isSecureContext){
-    navigator.clipboard.writeText(value).then(()=>showCopyDone()).catch(()=>fallbackCopy(el));
-  }else{
-    fallbackCopy(el);
-  }
-}
-function fallbackCopy(el){
-  el.focus();
-  el.select();
-  document.execCommand("copy");
-  showCopyDone();
-}
-function showCopyDone(){
-  const btn=document.querySelector('[onclick="copyPixPayload()"]');
-  if(!btn) return;
-  const original=btn.textContent;
-  btn.textContent="✅ Pix copiado!";
-  setTimeout(()=>btn.textContent=original,1800);
-}
+function copyPix(id,btn){const el=document.getElementById(id);if(!el)return;const done=()=>{const old=btn.textContent;btn.textContent="✅ Pix copiado!";setTimeout(()=>btn.textContent=old,1800)};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(el.value).then(done).catch(()=>fallbackCopy(el,done))}else fallbackCopy(el,done)}
+function fallbackCopy(el,done){el.focus();el.select();document.execCommand("copy");done()}
 </script></body></html>
 """
 
@@ -988,15 +994,23 @@ USER_DASHBOARD_HTML = """
 <div class="field"><label>Nome do pagador</label><input name="customer_name" value="{{ user.get("global_name") or user.get("username") or "" }}" minlength="2" maxlength="120" required><div class="hint">Usado somente para cadastrar o cliente no Asaas.</div></div>
 <div class="field"><label>CPF/CNPJ do pagador</label><input name="cpf_cnpj" inputmode="numeric" autocomplete="off" placeholder="Somente números" minlength="11" maxlength="14" required><div class="hint">Necessário apenas no primeiro depósito para criar o cliente Asaas automaticamente.</div></div>
 <div class="field"><label>Pagamento</label><div class="row"><div><b>Pix</b><span>O crédito só será liberado após confirmação do provedor.</span></div><span class="tag warn">AUTOMÁTICO</span></div></div>
-<div class="field full"><button class="btn primary" type="submit">＋ Gerar pagamento Pix</button></div>
+<div class="field full"><button class="btn primary" type="submit">{{ "↗ Abrir pagamento Pix" if active_deposit else "＋ Gerar pagamento Pix" }}</button></div>
 </form>
+{% if active_deposit and not deposit_result %}
+<div class="result"><div class="pix-box"><div class="pix-head"><div><b>⏳ Você já possui um pagamento Pix ativo</b><div class="muted" style="margin-top:5px">Não é possível gerar outro enquanto este não for pago ou vencer.</div></div><span class="tag warn">PENDENTE</span></div>
+{% if active_deposit.pix and active_deposit.pix.encodedImage %}<div class="pix-qr"><img src="data:image/png;base64,{{ active_deposit.pix.encodedImage }}" alt="QR Code Pix"></div>{% endif %}
+{% if active_deposit.pix and active_deposit.pix.payload %}<div class="field" style="margin-top:16px"><label>Pix Copia e Cola</label><textarea id="pix-payload-active" readonly rows="4">{{ active_deposit.pix.payload }}</textarea><button class="btn primary" type="button" style="margin-top:10px" onclick="copyPix('pix-payload-active', this)">📋 Copiar Pix Copia e Cola</button></div>{% endif %}
+{% if active_deposit.invoiceUrl %}<a class="btn" href="{{ active_deposit.invoiceUrl }}" target="_blank" rel="noopener" style="margin-top:10px;display:inline-block">Abrir cobrança no Asaas ↗</a>{% endif %}
+</div></div>
+{% endif %}
+
 {% if deposit_result %}
 <div class="result">
 {% if deposit_result.ok and deposit_result.payment %}
   <div class="pix-box">
     <div class="pix-head">
       <div>
-        <b>✅ Pix gerado</b>
+        <b>{% if deposit_result.existing %}⏳ Pagamento Pix ativo{% else %}✅ Pix gerado{% endif %}</b>
         <div class="muted" style="margin-top:5px">Valor: R$ {{ "%.2f"|format(deposit_result.payment.value or 0) }}</div>
       </div>
       <span class="tag warn">{{ deposit_result.payment.status or "PENDING" }}</span>
@@ -1155,6 +1169,10 @@ def user_deposit():
     user = discord_user()
     if not user:
         return redirect("/login")
+    active = get_active_deposit_payment(str(user["id"]))
+    if active:
+        session["deposit_result"] = {"ok": True, "payment": active, "existing": True}
+        return redirect("/dashboard#deposit")
     try:
         amount_cents = int(round(float(request.form.get("amount", "0").replace(",", ".")) * 100))
     except ValueError:
@@ -1182,10 +1200,12 @@ def user_dashboard():
     active_count = sum(1 for item in keys if valid_key(item))
     rooms_used = sum(int(item.get("rooms_used") or 0) for item in keys)
     wallet = wallet_for_user(discord_id)
+    active_deposit = get_active_deposit_payment(discord_id)
     transactions = db.table("wallet_transactions").select("*").eq("user_id", discord_id).order("created_at", desc=True).limit(20).execute().data or []
     return render_template_string(
         USER_DASHBOARD_HTML,
         user=user,
+        active_deposit=active_deposit,
         keys=keys,
         active_count=active_count,
         rooms_used=rooms_used,
