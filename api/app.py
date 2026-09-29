@@ -23,9 +23,11 @@ NIX_BASE_URL = os.environ.get("NIX_BASE_URL", "https://salas.nixbot.vip").rstrip
 NIX_ROOMS_URL = f"{NIX_BASE_URL}/rooms"
 NIX_AUTH_HEADER = "Authorization"
 NIX_AUTH_PREFIX = "Bearer "
-NIX_PAYMENT_CREATE_URL = os.environ.get("NIX_PAYMENT_CREATE_URL", "")
-NIX_PAYMENT_AUTH_HEADER = os.environ.get("NIX_PAYMENT_AUTH_HEADER", "")
-NIX_PAYMENT_AUTH_VALUE = os.environ.get("NIX_PAYMENT_AUTH_VALUE", "")
+ASAAS_API_KEY = os.environ.get("ASAAS_API_KEY", "")
+ASAAS_BASE_URL = os.environ.get("ASAAS_BASE_URL", "https://api-sandbox.asaas.com/v3").rstrip("/")
+ASAAS_CUSTOMER_ID = os.environ.get("ASAAS_CUSTOMER_ID", "")
+ASAAS_WEBHOOK_TOKEN = os.environ.get("ASAAS_WEBHOOK_TOKEN", "")
+ASAAS_USER_AGENT = os.environ.get("ASAAS_USER_AGENT", "ShadowAPI/1.0")
 ADMIN_USERNAME = os.environ.get("PANEL_USERNAME", os.environ.get("ADMIN_USERNAME", "Shadow"))
 ADMIN_PASSWORD_HASH = os.environ.get("PANEL_PASSWORD_HASH", os.environ.get("ADMIN_PASSWORD_HASH", ""))
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
@@ -140,25 +142,80 @@ def wallet_for_user(user_id):
     return {"user_id": str(user_id), "balance_cents": 0}
 
 
-def create_deposit_payment(user_id, amount_cents):
-    if not NIX_PAYMENT_CREATE_URL:
-        raise RuntimeError("Pagamento Pix ainda não configurado no Render.")
-    headers = {"Content-Type": "application/json"}
-    if NIX_PAYMENT_AUTH_HEADER and NIX_PAYMENT_AUTH_VALUE:
-        headers[NIX_PAYMENT_AUTH_HEADER] = NIX_PAYMENT_AUTH_VALUE
-    payload = {
-        "amount": amount_cents,
-        "externalReference": f"shadow:{user_id}:{secrets.token_hex(8)}",
-        "description": "Crédito Shadow API",
+def asaas_headers():
+    if not ASAAS_API_KEY:
+        raise RuntimeError("ASAAS_API_KEY ainda não configurada no Render.")
+    return {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": ASAAS_USER_AGENT,
+        "access_token": ASAAS_API_KEY,
     }
-    response = requests.post(NIX_PAYMENT_CREATE_URL, json=payload, headers=headers, timeout=20)
+
+
+def create_deposit_payment(user_id, amount_cents):
+    if not ASAAS_CUSTOMER_ID:
+        raise RuntimeError("ASAAS_CUSTOMER_ID ainda não configurado no Render.")
+    external_reference = f"shadow:{user_id}:{secrets.token_hex(8)}"
+    due_date = (now() + timedelta(days=1)).date().isoformat()
+    payload = {
+        "customer": ASAAS_CUSTOMER_ID,
+        "billingType": "PIX",
+        "value": round(amount_cents / 100, 2),
+        "dueDate": due_date,
+        "description": "Crédito Shadow API",
+        "externalReference": external_reference,
+    }
+    response = requests.post(
+        f"{ASAAS_BASE_URL}/payments",
+        json=payload,
+        headers=asaas_headers(),
+        timeout=20,
+    )
     try:
         data = response.json()
     except ValueError:
         data = {"raw": response.text[:4000]}
     if not 200 <= response.status_code < 300:
-        raise RuntimeError(data.get("error") or data.get("message") or f"HTTP {response.status_code}")
-    return data
+        errors = data.get("errors") if isinstance(data, dict) else None
+        message = errors[0].get("description") if errors and isinstance(errors[0], dict) else None
+        raise RuntimeError(message or data.get("message") or data.get("error") or f"HTTP {response.status_code}")
+
+    payment_id = data.get("id")
+    if not payment_id:
+        raise RuntimeError("O Asaas não retornou o ID da cobrança.")
+
+    qr_response = requests.get(
+        f"{ASAAS_BASE_URL}/payments/{urllib.parse.quote(str(payment_id), safe='')}/pixQrCode",
+        headers=asaas_headers(),
+        timeout=20,
+    )
+    try:
+        qr_data = qr_response.json()
+    except ValueError:
+        qr_data = {"raw": qr_response.text[:4000]}
+    if not 200 <= qr_response.status_code < 300:
+        errors = qr_data.get("errors") if isinstance(qr_data, dict) else None
+        message = errors[0].get("description") if errors and isinstance(errors[0], dict) else None
+        raise RuntimeError(message or qr_data.get("message") or qr_data.get("error") or f"HTTP {qr_response.status_code}")
+
+    db.table("wallet_transactions").insert({
+        "user_id": str(user_id),
+        "type": "deposit",
+        "amount_cents": amount_cents,
+        "status": "pending",
+        "external_payment_id": str(payment_id),
+        "description": "Depósito Pix via Asaas",
+    }).execute()
+
+    return {
+        "id": payment_id,
+        "status": data.get("status"),
+        "value": data.get("value"),
+        "externalReference": external_reference,
+        "invoiceUrl": data.get("invoiceUrl"),
+        "pix": qr_data,
+    }
 
 
 def find_key_by_raw(raw):
@@ -452,36 +509,75 @@ document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{doc
 def home():
     return render_template_string(HOME_HTML)
 
-@app.post("/")
-def ag_webhook_root():
+@app.post("/webhook/asaas")
+def asaas_webhook():
+    if ASAAS_WEBHOOK_TOKEN:
+        received_token = request.headers.get("asaas-access-token", "")
+        if not secrets.compare_digest(received_token, ASAAS_WEBHOOK_TOKEN):
+            return jsonify({"ok": False, "error": "Webhook não autorizado"}), 401
+
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"ok": False, "error": "O corpo do webhook deve ser JSON"}), 400
+
+    event_id = payload.get("id")
+    event = payload.get("event")
+    payment = payload.get("payment") if isinstance(payload.get("payment"), dict) else {}
+    payment_id = payment.get("id")
+    status = str(payment.get("status") or "").upper()
+
+    if event != "PAYMENT_RECEIVED":
+        return jsonify({"ok": True, "received": True, "ignored": True, "event": event}), 200
+
+    if not payment_id:
+        return jsonify({"ok": False, "error": "payment.id ausente"}), 400
+
     try:
-        delivery = register_delivery(payload)
-        discord_user_id = (payload.get("discord_user_id") or payload.get("discordId"))
-        if not discord_user_id:
-            for key in ("user", "customer", "buyer"):
-                obj = payload.get(key)
-                if isinstance(obj, dict):
-                    discord_user_id = obj.get("discord_user_id") or obj.get("discordId")
-                    if discord_user_id:
-                        break
+        transaction = db.table("wallet_transactions").select("*").eq(
+            "external_payment_id", str(payment_id)
+        ).limit(1).execute().data or []
+
+        if not transaction:
+            return jsonify({"ok": True, "received": True, "ignored": True, "reason": "payment_not_registered"}), 200
+
+        tx = transaction[0]
+        external_reference = payment.get("externalReference") or ""
+        user_id = tx.get("user_id")
+
+        if not user_id and isinstance(external_reference, str) and external_reference.startswith("shadow:"):
+            parts = external_reference.split(":")
+            if len(parts) >= 2:
+                user_id = parts[1]
+
+        amount_cents = int(round(float(payment.get("value") or 0) * 100))
+        if amount_cents <= 0:
+            return jsonify({"ok": False, "error": "Valor do pagamento inválido"}), 400
+
+        credited = db.rpc("credit_asaas_wallet", {
+            "p_payment_id": str(payment_id),
+            "p_user_id": str(user_id),
+            "p_amount_cents": amount_cents,
+            "p_description": "Depósito Pix confirmado pelo Asaas",
+        }).execute()
+
         return jsonify({
             "ok": True,
             "received": True,
-            "delivery_id": delivery.get("id") if delivery else None,
-            "api_key_linked": bool(delivery and delivery.get("api_key_id")),
-            "discord_user_id": str(discord_user_id) if discord_user_id else None,
-            "account_type": discord_account_type(discord_user_id),
+            "event_id": event_id,
+            "payment_id": str(payment_id),
+            "status": status,
+            "credited": bool(credited.data),
         }), 200
     except Exception:
-        return jsonify({"ok": False, "error": "Falha ao registrar webhook"}), 500
+        return jsonify({"ok": False, "error": "Falha ao processar pagamento Asaas"}), 500
 
 
 @app.post("/webhook/ag-solutions")
-def ag_webhook():
-    return ag_webhook_root()
+def legacy_ag_webhook():
+    return jsonify({
+        "ok": False,
+        "error": "Webhook AGSolutions desativado. Use /webhook/asaas.",
+    }), 410
 
 
 @app.get("/health")
