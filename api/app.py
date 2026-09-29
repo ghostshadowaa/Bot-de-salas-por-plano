@@ -1000,7 +1000,7 @@ USER_DASHBOARD_HTML = """
 <div class="result"><div class="pix-box"><div class="pix-head"><div><b>⏳ Você já possui um pagamento Pix ativo</b><div class="muted" style="margin-top:5px">Não é possível gerar outro enquanto este não for pago ou vencer.</div></div><span class="tag warn">PENDENTE</span></div>
 {% if active_deposit.pix and active_deposit.pix.encodedImage %}<div class="pix-qr"><img src="data:image/png;base64,{{ active_deposit.pix.encodedImage }}" alt="QR Code Pix"></div>{% endif %}
 {% if active_deposit.pix and active_deposit.pix.payload %}<div class="field" style="margin-top:16px"><label>Pix Copia e Cola</label><textarea id="pix-payload-active" readonly rows="4">{{ active_deposit.pix.payload }}</textarea><button class="btn primary" type="button" style="margin-top:10px" onclick="copyPix('pix-payload-active', this)">📋 Copiar Pix Copia e Cola</button></div>{% endif %}
-{% if active_deposit.invoiceUrl %}<a class="btn" href="{{ active_deposit.invoiceUrl }}" target="_blank" rel="noopener" style="margin-top:10px;display:inline-block">Abrir cobrança no Asaas ↗</a>{% endif %}
+
 </div></div>
 {% endif %}
 
