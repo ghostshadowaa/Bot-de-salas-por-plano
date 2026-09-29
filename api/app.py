@@ -25,7 +25,6 @@ NIX_AUTH_HEADER = "Authorization"
 NIX_AUTH_PREFIX = "Bearer "
 ASAAS_API_KEY = os.environ.get("ASAAS_API_KEY", "")
 ASAAS_BASE_URL = os.environ.get("ASAAS_BASE_URL", "https://api-sandbox.asaas.com/v3").rstrip("/")
-ASAAS_CUSTOMER_ID = os.environ.get("ASAAS_CUSTOMER_ID", "")
 ASAAS_WEBHOOK_TOKEN = os.environ.get("ASAAS_WEBHOOK_TOKEN", "")
 ASAAS_USER_AGENT = os.environ.get("ASAAS_USER_AGENT", "ShadowAPI/1.0")
 ADMIN_USERNAME = os.environ.get("PANEL_USERNAME", os.environ.get("ADMIN_USERNAME", "Shadow"))
@@ -153,13 +152,82 @@ def asaas_headers():
     }
 
 
-def create_deposit_payment(user_id, amount_cents):
-    if not ASAAS_CUSTOMER_ID:
-        raise RuntimeError("ASAAS_CUSTOMER_ID ainda não configurado no Render.")
+def asaas_customer_for_user(user_id, customer_name, cpf_cnpj):
+    wallet = wallet_for_user(user_id)
+    existing_id = wallet.get("asaas_customer_id")
+    if existing_id:
+        return existing_id
+
+    customer_name = str(customer_name or "").strip()
+    cpf_cnpj = "".join(ch for ch in str(cpf_cnpj or "") if ch.isdigit())
+
+    if len(customer_name) < 2:
+        raise RuntimeError("Informe o nome do pagador.")
+    if len(cpf_cnpj) not in (11, 14):
+        raise RuntimeError("Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.")
+
+    external_reference = f"shadow:user:{user_id}"
+
+    lookup = requests.get(
+        f"{ASAAS_BASE_URL}/customers",
+        params={"externalReference": external_reference, "limit": 1},
+        headers=asaas_headers(),
+        timeout=20,
+    )
+    try:
+        lookup_data = lookup.json()
+    except ValueError:
+        lookup_data = {}
+    if not 200 <= lookup.status_code < 300:
+        errors = lookup_data.get("errors") if isinstance(lookup_data, dict) else None
+        message = errors[0].get("description") if errors and isinstance(errors[0], dict) else None
+        raise RuntimeError(message or lookup_data.get("message") or f"HTTP {lookup.status_code}")
+
+    existing = lookup_data.get("data") if isinstance(lookup_data, dict) else []
+    if existing:
+        customer_id = existing[0].get("id")
+        if customer_id:
+            db.table("user_wallets").update({"asaas_customer_id": str(customer_id)}).eq(
+                "user_id", str(user_id)
+            ).execute()
+            return str(customer_id)
+
+    response = requests.post(
+        f"{ASAAS_BASE_URL}/customers",
+        json={
+            "name": customer_name,
+            "cpfCnpj": cpf_cnpj,
+            "externalReference": external_reference,
+            "notificationDisabled": True,
+        },
+        headers=asaas_headers(),
+        timeout=20,
+    )
+    try:
+        data = response.json()
+    except ValueError:
+        data = {"raw": response.text[:4000]}
+    if not 200 <= response.status_code < 300:
+        errors = data.get("errors") if isinstance(data, dict) else None
+        message = errors[0].get("description") if errors and isinstance(errors[0], dict) else None
+        raise RuntimeError(message or data.get("message") or data.get("error") or f"HTTP {response.status_code}")
+
+    customer_id = data.get("id")
+    if not customer_id:
+        raise RuntimeError("O Asaas não retornou o ID do cliente.")
+
+    db.table("user_wallets").update({"asaas_customer_id": str(customer_id)}).eq(
+        "user_id", str(user_id)
+    ).execute()
+    return str(customer_id)
+
+
+def create_deposit_payment(user_id, amount_cents, customer_name, cpf_cnpj):
+    customer_id = asaas_customer_for_user(user_id, customer_name, cpf_cnpj)
     external_reference = f"shadow:{user_id}:{secrets.token_hex(8)}"
     due_date = (now() + timedelta(days=1)).date().isoformat()
     payload = {
-        "customer": ASAAS_CUSTOMER_ID,
+        "customer": customer_id,
         "billingType": "PIX",
         "value": round(amount_cents / 100, 2),
         "dueDate": due_date,
@@ -893,6 +961,8 @@ USER_DASHBOARD_HTML = """
 <div class="head"><div><h2>💰 Adicionar crédito</h2><p>O saldo pertence à sua conta Discord e pode ser usado pelas suas API Keys.</p></div><span class="tag ok">SALDO R$ {{ "%.2f"|format((wallet.balance_cents or 0)/100) }}</span></div>
 <form class="form" method="post" action="/dashboard/deposit">
 <div class="field"><label>Valor do depósito</label><input name="amount" type="number" min="5" max="500" step="0.01" value="10.00" required><div class="hint">Mínimo R$ 5,00 · máximo R$ 500,00.</div></div>
+<div class="field"><label>Nome do pagador</label><input name="customer_name" value="{{ user.get("global_name") or user.get("username") or "" }}" minlength="2" maxlength="120" required><div class="hint">Usado somente para cadastrar o cliente no Asaas.</div></div>
+<div class="field"><label>CPF/CNPJ do pagador</label><input name="cpf_cnpj" inputmode="numeric" autocomplete="off" placeholder="Somente números" minlength="11" maxlength="14" required><div class="hint">Necessário apenas no primeiro depósito para criar o cliente Asaas automaticamente.</div></div>
 <div class="field"><label>Pagamento</label><div class="row"><div><b>Pix</b><span>O crédito só será liberado após confirmação do provedor.</span></div><span class="tag warn">AUTOMÁTICO</span></div></div>
 <div class="field full"><button class="btn primary" type="submit">＋ Gerar pagamento Pix</button></div>
 </form>
@@ -1038,8 +1108,10 @@ def user_deposit():
     if amount_cents < 500 or amount_cents > 50000:
         session["deposit_result"] = {"ok": False, "error": "Escolha um valor entre R$ 5,00 e R$ 500,00."}
         return redirect("/dashboard#deposit")
+    customer_name = request.form.get("customer_name", "").strip()
+    cpf_cnpj = request.form.get("cpf_cnpj", "").strip()
     try:
-        data = create_deposit_payment(str(user["id"]), amount_cents)
+        data = create_deposit_payment(str(user["id"]), amount_cents, customer_name, cpf_cnpj)
         session["deposit_result"] = {"ok": True, "payment": data}
     except (requests.RequestException, RuntimeError) as exc:
         session["deposit_result"] = {"ok": False, "error": str(exc)}
