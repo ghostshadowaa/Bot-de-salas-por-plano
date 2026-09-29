@@ -990,7 +990,7 @@ USER_DASHBOARD_HTML = """
 <section id="deposit" class="panel" style="margin-top:18px">
 <div class="head"><div><h2>💰 Adicionar crédito</h2><p>O saldo pertence à sua conta Discord e pode ser usado pelas suas API Keys.</p></div><span class="tag ok">SALDO R$ {{ "%.2f"|format((wallet.balance_cents or 0)/100) }}</span></div>
 <form class="form" method="post" action="/dashboard/deposit">
-<div class="field"><label>Valor do depósito</label><input name="amount" type="number" min="5" max="500" step="0.01" value="10.00" required><div class="hint">Mínimo R$ 5,00 · máximo R$ 500,00.</div></div>
+<div class="field"><label>Valor do depósito</label><input name="amount" type="number" min="6" max="500" step="0.01" value="10.00" required><div class="hint">Mínimo R$ 6,00 · máximo R$ 500,00.</div></div>
 <div class="field"><label>Nome do pagador</label><input name="customer_name" value="{{ user.get("global_name") or user.get("username") or "" }}" minlength="2" maxlength="120" required><div class="hint">Usado somente para cadastrar o cliente no Asaas.</div></div>
 <div class="field"><label>CPF/CNPJ do pagador</label><input name="cpf_cnpj" inputmode="numeric" autocomplete="off" placeholder="Somente números" minlength="11" maxlength="14" required><div class="hint">Necessário apenas no primeiro depósito para criar o cliente Asaas automaticamente.</div></div>
 <div class="field"><label>Pagamento</label><div class="row"><div><b>Pix</b><span>O crédito só será liberado após confirmação do provedor.</span></div><span class="tag warn">AUTOMÁTICO</span></div></div>
@@ -1177,8 +1177,8 @@ def user_deposit():
         amount_cents = int(round(float(request.form.get("amount", "0").replace(",", ".")) * 100))
     except ValueError:
         amount_cents = 0
-    if amount_cents < 500 or amount_cents > 50000:
-        session["deposit_result"] = {"ok": False, "error": "Escolha um valor entre R$ 5,00 e R$ 500,00."}
+    if amount_cents < 600 or amount_cents > 50000:
+        session["deposit_result"] = {"ok": False, "error": "Escolha um valor entre R$ 6,00 e R$ 500,00."}
         return redirect("/dashboard#deposit")
     customer_name = request.form.get("customer_name", "").strip()
     cpf_cnpj = request.form.get("cpf_cnpj", "").strip()
