@@ -352,7 +352,31 @@ LOGIN_HTML = """
 h1{margin:0 0 6px}.muted{color:#a49caf}input,button{width:100%;padding:12px;border-radius:10px;margin-top:10px;background:#0b0710;color:#fff;border:1px solid #3b2d49}button{background:#7c3aed;border:0;font-weight:800;cursor:pointer}.err{color:#ff8c9c;margin-top:12px}
 </style></head><body><div class="card"><h1>🟣 Shadow API</h1><p class="muted">Painel administrativo da API</p>
 <form method="post"><input name="username" placeholder="Usuário" required><input name="password" type="password" placeholder="Senha" required><button>Entrar</button></form>
-{% if error %}<div class="err">{{error}}</div>{% endif %}</div></body></html>
+{% if error %}<div class="err">{{error}}</div>{% endif %}</div><script>
+function copyPixPayload(){
+  const el=document.getElementById("pix-payload");
+  if(!el) return;
+  const value=el.value;
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(value).then(()=>showCopyDone()).catch(()=>fallbackCopy(el));
+  }else{
+    fallbackCopy(el);
+  }
+}
+function fallbackCopy(el){
+  el.focus();
+  el.select();
+  document.execCommand("copy");
+  showCopyDone();
+}
+function showCopyDone(){
+  const btn=document.querySelector('[onclick="copyPixPayload()"]');
+  if(!btn) return;
+  const original=btn.textContent;
+  btn.textContent="✅ Pix copiado!";
+  setTimeout(()=>btn.textContent=original,1800);
+}
+</script></body></html>
 """
 
 DASHBOARD_HTML = """
@@ -921,7 +945,7 @@ USER_DASHBOARD_HTML = """
 .grid{display:grid;gap:16px;margin-top:18px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card,.panel{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));box-shadow:var(--shadow);padding:18px;min-width:0}.card h3{margin:0;color:var(--muted);font-size:13px}.metric{font-size:32px;font-weight:900;margin-top:8px;letter-spacing:-.05em}.muted{color:var(--muted);font-size:13px;line-height:1.55}.two{grid-template-columns:1.25fr .9fr}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.head h2{margin:0;font-size:17px;letter-spacing:-.03em}.head p{margin:6px 0 0;color:var(--muted);line-height:1.55}
 .list{display:grid;gap:11px;margin-top:15px}.row{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}.row b{display:block}.row span{display:block;color:var(--muted);font-size:12px;margin-top:4px}.tag{font-size:11px;font-weight:900;padding:6px 10px;border-radius:999px;white-space:nowrap}.tag.ok{color:#86efac;background:rgba(34,197,94,.12)}.tag.warn{color:#fcd34d;background:rgba(245,158,11,.12)}.tag.lock{color:#fca5a5;background:rgba(239,68,68,.12)}.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed rgba(148,163,184,.26);border-radius:18px;background:rgba(255,255,255,.02)}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}label{font-size:13px;color:#cbd5e1;font-weight:800}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;background:rgba(2,6,23,.48);color:var(--text);padding:12px 13px;outline:none}input:focus,select:focus{border-color:rgba(34,211,238,.55);box-shadow:0 0 0 4px rgba(34,211,238,.1)}.hint{font-size:12px;color:var(--muted)}
-.code{position:relative;margin-top:14px;border:1px solid rgba(34,211,238,.25);background:#020617;border-radius:18px;padding:16px;overflow:auto}.code pre{margin:0;color:#c4b5fd;font-size:12px;line-height:1.7}.code .copy{position:absolute;right:10px;top:10px}.result{margin-top:14px;padding:14px;border-radius:15px;border:1px solid rgba(34,211,238,.22);background:rgba(34,211,238,.05)}.result pre{margin:8px 0 0;white-space:pre-wrap;word-break:break-word;color:#bae6fd;font-size:12px}
+.code{position:relative;margin-top:14px;border:1px solid rgba(34,211,238,.25);background:#020617;border-radius:18px;padding:16px;overflow:auto}.code pre{margin:0;color:#c4b5fd;font-size:12px;line-height:1.7}.code .copy{position:absolute;right:10px;top:10px}.result{margin-top:14px;padding:14px;border-radius:15px;border:1px solid rgba(34,211,238,.22);background:rgba(34,211,238,.05)}.result pre{margin:8px 0 0;white-space:pre-wrap;word-break:break-word;color:#bae6fd;font-size:12px}.pix-box{margin-top:12px;padding:18px;border:1px solid rgba(124,58,237,.28);border-radius:18px;background:rgba(124,58,237,.06)}.pix-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.pix-qr{display:grid;place-items:center;margin:18px auto 4px;padding:14px;width:min(320px,100%);background:#fff;border-radius:18px}.pix-qr img{display:block;width:100%;height:auto;image-rendering:auto}.pix-box textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;resize:vertical}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:25;backdrop-filter:blur(3px)}
 @media(max-width:1150px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}}@media(max-width:860px){.shell{display:block}.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}.nav{grid-template-columns:repeat(2,1fr)}.main{padding:16px}.cards{grid-template-columns:1fr}.form{grid-template-columns:1fr}.field.full{grid-column:auto}.topbar{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions .btn{flex:1}}
 </style>
@@ -966,7 +990,37 @@ USER_DASHBOARD_HTML = """
 <div class="field"><label>Pagamento</label><div class="row"><div><b>Pix</b><span>O crédito só será liberado após confirmação do provedor.</span></div><span class="tag warn">AUTOMÁTICO</span></div></div>
 <div class="field full"><button class="btn primary" type="submit">＋ Gerar pagamento Pix</button></div>
 </form>
-{% if deposit_result %}<div class="result"><b>{% if deposit_result.ok %}Pagamento criado{% else %}Não foi possível criar o pagamento{% endif %}</b>{% if deposit_result.error %}<pre>{{deposit_result.error}}</pre>{% elif deposit_result.payment %}<pre>{{deposit_result.payment|tojson(indent=2)}}</pre>{% endif %}</div>{% endif %}
+{% if deposit_result %}
+<div class="result">
+{% if deposit_result.ok and deposit_result.payment %}
+  <div class="pix-box">
+    <div class="pix-head">
+      <div>
+        <b>✅ Pix gerado</b>
+        <div class="muted" style="margin-top:5px">Valor: R$ {{ "%.2f"|format(deposit_result.payment.value or 0) }}</div>
+      </div>
+      <span class="tag warn">{{ deposit_result.payment.status or "PENDING" }}</span>
+    </div>
+    {% if deposit_result.payment.pix and deposit_result.payment.pix.encodedImage %}
+      <div class="pix-qr">
+        <img src="data:image/png;base64,{{ deposit_result.payment.pix.encodedImage }}" alt="QR Code Pix">
+      </div>
+    {% endif %}
+    {% if deposit_result.payment.pix and deposit_result.payment.pix.payload %}
+      <div class="field" style="margin-top:16px">
+        <label>Pix Copia e Cola</label>
+        <textarea id="pix-payload" readonly rows="4">{{ deposit_result.payment.pix.payload }}</textarea>
+        <button class="btn primary" type="button" style="margin-top:10px" onclick="copyPixPayload()">📋 Copiar Pix Copia e Cola</button>
+      </div>
+    {% endif %}
+    <div class="hint" style="margin-top:12px">Após o pagamento ser confirmado pelo Asaas, o saldo será creditado automaticamente.</div>
+  </div>
+{% elif deposit_result.error %}
+  <b>❌ Não foi possível criar o pagamento</b>
+  <pre>{{ deposit_result.error }}</pre>
+{% endif %}
+</div>
+{% endif %}
 <div class="list"><div class="row"><div><b>Histórico de crédito</b><span>Depósitos, cobranças e estornos da sua carteira.</span></div><span class="tag ok">{{transactions|length}} registros</span></div>
 {% for t in transactions[:8] %}<div class="row"><div><b>{{t.type|replace("_"," ")|title}}</b><span>{{t.created_at}}</span></div><strong>{% if t.amount_cents >= 0 %}+{% endif %}R$ {{ "%.2f"|format((t.amount_cents or 0)/100) }}</strong></div>{% endfor %}</div>
 </section>
