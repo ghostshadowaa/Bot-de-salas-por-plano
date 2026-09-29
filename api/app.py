@@ -156,7 +156,23 @@ def asaas_customer_for_user(user_id, customer_name, cpf_cnpj):
     wallet = wallet_for_user(user_id)
     existing_id = wallet.get("asaas_customer_id")
     if existing_id:
-        return existing_id
+        check = requests.get(
+            f"{ASAAS_BASE_URL}/customers/{existing_id}",
+            headers=asaas_headers(),
+            timeout=20,
+        )
+        if 200 <= check.status_code < 300:
+            return str(existing_id)
+        if check.status_code not in (404,):
+            try:
+                check_data = check.json()
+            except ValueError:
+                check_data = {}
+            errors = check_data.get("errors") if isinstance(check_data, dict) else None
+            message = errors[0].get("description") if errors and isinstance(errors[0], dict) else None
+            raise RuntimeError(message or check_data.get("message") or f"HTTP {check.status_code}")
+        # ID antigo/inexistente (por exemplo, de outro ambiente do Asaas):
+        # continua o fluxo para localizar ou criar o cliente no ambiente atual.
 
     customer_name = str(customer_name or "").strip()
     cpf_cnpj = "".join(ch for ch in str(cpf_cnpj or "") if ch.isdigit())
