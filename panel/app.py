@@ -59,7 +59,10 @@ def painel():
         and (not type_filter or k.get("duration_unit","days")==type_filter)
     ]
     guilds=db.table("guilds").select("*").order("name").execute().data
-    active_guild_keys=db.table("guild_keys").select("guild_id,key_id,active,guilds(name)").eq("active",True).execute().data
+    active_guild_keys=db.table("guild_keys").select("guild_id,key_id,active,guilds(name),keys(id,key,active,expires_at,duration_unit,plans(name))").execute().data
+    keys_by_guild={}
+    for link in active_guild_keys:
+        keys_by_guild.setdefault(str(link["guild_id"]),[]).append(link)
     guild_config=db.table("guild_config").select("guild_id,notify_channel_id").execute().data
     config_by_guild={str(x["guild_id"]):x for x in guild_config}
     linked_by_key={}
@@ -74,6 +77,7 @@ def painel():
         type_filter=type_filter,
         guilds=guilds,
         active_guild_keys=active_guild_keys,
+        keys_by_guild=keys_by_guild,
         linked_by_key=linked_by_key,
         config_by_guild=config_by_guild,
         batch_result=session.pop("batch_result", None),
@@ -190,6 +194,14 @@ def delete_key(key_id):
     db.table("room_usage").delete().eq("key_id",key_id).execute()
     db.table("keys").delete().eq("id",key_id).execute()
     return redirect("/painel")
+
+@app.route("/painel/servidores/<guild_id>/keys/<int:key_id>/remove",methods=["POST"])
+def remove_server_key(guild_id,key_id):
+    if not ok():
+        return redirect_login()
+    db.table("guild_keys").delete().eq("guild_id",str(guild_id)).eq("key_id",key_id).execute()
+    return redirect("/painel")
+
 
 @app.route("/painel/keys/<int:key_id>/broadcast",methods=["POST"])
 def key_broadcast(key_id):
