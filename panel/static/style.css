@@ -33,3 +33,9 @@ button{background:#7c3aed;border:0;font-weight:700;cursor:pointer}
 .modal-card textarea{min-height:180px;resize:vertical;font-family:monospace}
 .modal-close{position:absolute;right:12px;top:10px;width:40px;margin:0;padding:6px;font-size:24px;background:transparent;color:#aaa}
 @media(max-width:750px){.batch-form{grid-template-columns:1fr}}
+
+.server-card{border:1px solid #302341;border-radius:14px;padding:15px;margin:12px 0;background:#100c17}
+.server-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding-bottom:10px}
+.server-key{border-top:1px solid #302341;padding-top:12px;margin-top:12px}
+.server-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:750px){.server-actions{grid-template-columns:1fr}.server-title{flex-direction:column}}
