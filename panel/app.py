@@ -47,7 +47,17 @@ def painel():
     if not ok():
         return redirect_login()
     plans=db.table("plans").select("*").eq("active",True).order("id").execute().data
-    keys=db.table("keys").select("*, plans(name,room_limit)").order("created_at",desc=True).execute().data
+    all_keys=db.table("keys").select("*, plans(name,room_limit)").order("created_at",desc=True).execute().data
+    key_filter=request.args.get("key","").strip()
+    type_filter=request.args.get("type","").strip().lower()
+    valid_types={"days","weeks","months"}
+    if type_filter not in valid_types:
+        type_filter=""
+    keys=[
+        k for k in all_keys
+        if (not key_filter or key_filter.casefold() in str(k.get("key","")).casefold())
+        and (not type_filter or k.get("duration_unit","days")==type_filter)
+    ]
     guilds=db.table("guilds").select("*").order("name").execute().data
     active_guild_keys=db.table("guild_keys").select("guild_id,key_id,active,guilds(name)").eq("active",True).execute().data
     guild_config=db.table("guild_config").select("guild_id,notify_channel_id").execute().data
@@ -59,6 +69,9 @@ def painel():
         "dashboard.html",
         plans=plans,
         keys=keys,
+        total_keys=len(all_keys),
+        key_filter=key_filter,
+        type_filter=type_filter,
         guilds=guilds,
         active_guild_keys=active_guild_keys,
         linked_by_key=linked_by_key,
@@ -89,7 +102,7 @@ def new_key():
     duration_days=amount*multipliers[unit]
     value="SHADOW-"+"-".join("".join(secrets.choice(string.ascii_uppercase+string.digits) for _ in range(4)) for _ in range(3))
     expires=(datetime.now(timezone.utc)+timedelta(days=duration_days)).isoformat()
-    db.table("keys").insert({"key":value,"plan_id":plan_id,"expires_at":expires,"active":True}).execute()
+    db.table("keys").insert({"key":value,"plan_id":plan_id,"duration_unit":unit,"expires_at":expires,"active":True}).execute()
     return redirect("/painel")
 
 @app.route("/painel/keys/batch",methods=["POST"])
@@ -120,9 +133,11 @@ def batch_keys():
         )
         keys.append(value)
 
-    batch_expires=(datetime.now(timezone.utc)+timedelta(days=int(rows[0]["duration_days"]))).isoformat()
+    batch_days=int(rows[0]["duration_days"])
+    batch_expires=(datetime.now(timezone.utc)+timedelta(days=batch_days)).isoformat()
+    batch_unit="weeks" if batch_days==7 else "months" if batch_days==30 else "days"
     db.table("keys").insert([
-        {"key":value,"plan_id":plan_id,"expires_at":batch_expires,"active":True}
+        {"key":value,"plan_id":plan_id,"duration_unit":batch_unit,"expires_at":batch_expires,"active":True}
         for value in keys
     ]).execute()
 
