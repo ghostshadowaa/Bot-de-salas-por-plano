@@ -120,8 +120,9 @@ def batch_keys():
         )
         keys.append(value)
 
+    batch_expires=(datetime.now(timezone.utc)+timedelta(days=int(rows[0]["duration_days"]))).isoformat()
     db.table("keys").insert([
-        {"key":value,"plan_id":plan_id,"expires_at":None,"active":True}
+        {"key":value,"plan_id":plan_id,"expires_at":batch_expires,"active":True}
         for value in keys
     ]).execute()
 
