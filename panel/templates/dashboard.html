@@ -116,8 +116,39 @@
 <section class="card">
 <h2>Servidores</h2>
 {% for s in guilds %}
-<div class="row">
-  <div><b>{{s.name}}</b><small>ID: {{s.guild_id}} · Dono: {{s.owner_id}}</small></div>
+<div class="server-card">
+  <div class="server-title">
+    <div><b>{{s.name}}</b><small>ID: {{s.guild_id}} · Dono: {{s.owner_id}}</small></div>
+    <span class="muted">{{keys_by_guild.get(s.guild_id|string, [])|length}} key(s) vinculada(s)</span>
+  </div>
+  {% set server_keys=keys_by_guild.get(s.guild_id|string, []) %}
+  {% for link in server_keys %}
+    {% set sk=link.keys %}
+    {% if sk %}
+    <div class="server-key">
+      <div>
+        <b class="key-value">{{sk.key}}</b>
+        <small>{{sk.plans.name if sk.plans else 'Plano sem nome'}} · {{ {'days':'Dias','weeks':'Semanas','months':'Meses'}.get(sk.duration_unit or 'days','Dias') }} · expira {{sk.expires_at or 'sem expiração'}}</small>
+        <small>Vínculo: {{'ATIVO' if link.active else 'PAUSADO'}} · Key: {{'ATIVA' if sk.active else 'PAUSADA'}}</small>
+      </div>
+      <div class="actions server-actions">
+        <button type="button" class="secondary copy-btn" data-key="{{sk.key}}">📋 Copiar key</button>
+        <form method="post" action="/painel/keys/{{sk.id}}/toggle">
+          <button class="secondary">{{'Pausar key' if sk.active else 'Reativar key'}}</button>
+        </form>
+        <form method="post" action="/painel/keys/{{sk.id}}/renew">
+          <select name="days"><option value="7">+7 dias</option><option value="30" selected>+30 dias</option><option value="90">+90 dias</option></select>
+          <button class="secondary">Renovar</button>
+        </form>
+        <form method="post" action="/painel/servidores/{{s.guild_id}}/keys/{{sk.id}}/remove" onsubmit="return confirm('Remover a key deste servidor? A key continuará cadastrada no painel.')">
+          <button class="danger">🗑️ Excluir do servidor</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  {% else %}
+    <p class="muted">Nenhuma key vinculada a este servidor.</p>
+  {% endfor %}
 </div>
 {% else %}<p class="muted">Nenhum servidor registrado.</p>{% endfor %}
 </section>
