@@ -13,7 +13,7 @@
 </header>
 
 <section class="stats">
-  <div class="card stat"><b>{{keys|length}}</b><span>Keys</span></div>
+  <div class="card stat"><b>{{total_keys}}</b><span>Keys cadastradas</span></div>
   <div class="card stat"><b>{{guilds|length}}</b><span>Servidores</span></div>
   <div class="card stat"><b>{{active_guild_keys|length}}</b><span>Planos ativos</span></div>
 </section>
@@ -62,6 +62,18 @@
 
 <section class="card">
 <h2>Keys</h2>
+<form method="get" action="/painel" class="grid-form filter-form">
+  <input type="search" name="key" value="{{key_filter}}" placeholder="Filtrar pela key..." aria-label="Filtrar pela key">
+  <select name="type" aria-label="Filtrar por tipo de duração">
+    <option value="" {% if not type_filter %}selected{% endif %}>Todos os tipos</option>
+    <option value="days" {% if type_filter == 'days' %}selected{% endif %}>Dias</option>
+    <option value="weeks" {% if type_filter == 'weeks' %}selected{% endif %}>Semanas</option>
+    <option value="months" {% if type_filter == 'months' %}selected{% endif %}>Meses</option>
+  </select>
+  <button type="submit">Filtrar</button>
+  <a class="filter-clear" href="/painel">Limpar filtros</a>
+</form>
+<p class="muted">Exibindo {{keys|length}} de {{total_keys}} keys.</p>
 {% for k in keys %}
 {% set link=linked_by_key.get(k.id|string) %}
 {% set cfg=config_by_guild.get(link.guild_id|string) if link else none %}
@@ -69,7 +81,7 @@
   <div class="key-head">
     <div>
       <b class="key-value">{{k.key}}</b>
-      <small>{{k.plans.name if k.plans else '—'}} · expira {{k.expires_at or 'sem expiração'}}</small>
+      <small>{{k.plans.name if k.plans else '—'}} · Tipo: {{ {'days':'Dias','weeks':'Semanas','months':'Meses'}.get(k.duration_unit or 'days', 'Dias') }} · expira {{k.expires_at or 'sem expiração'}}</small>
       {% if link %}<small>Servidor: {{link.guilds.name if link.guilds else link.guild_id}}</small>{% else %}<small>Servidor: não ativada</small>{% endif %}
     </div>
     <span class="{{'ok' if k.active else 'off'}}">{{'ATIVA' if k.active else 'DESATIVADA'}}</span>
@@ -98,7 +110,7 @@
   </details>
   {% endif %}
 </div>
-{% else %}<p class="muted">Nenhuma key.</p>{% endfor %}
+{% else %}<p class="muted">Nenhuma key encontrada com esses filtros.</p>{% endfor %}
 </section>
 
 <section class="card">
