@@ -13,8 +13,10 @@ create table if not exists keys (
  active boolean not null default true,
  uses integer not null default 0,
  expires_at timestamptz,
+ duration_unit text not null default 'days',
  created_at timestamptz default now()
 );
+alter table keys add column if not exists duration_unit text not null default 'days';
 create table if not exists guilds (
  guild_id text primary key,
  name text,
