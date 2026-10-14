@@ -78,8 +78,17 @@ def new_key():
     if not rows:
         return redirect("/painel")
     p=rows[0]
+    try:
+        amount=int(request.form.get("duration_amount","1"))
+    except (TypeError,ValueError):
+        return redirect("/painel")
+    unit=request.form.get("duration_unit","days")
+    multipliers={"days":1,"weeks":7,"months":30}
+    if unit not in multipliers or amount < 1 or amount > 3650:
+        return redirect("/painel")
+    duration_days=amount*multipliers[unit]
     value="SHADOW-"+"-".join("".join(secrets.choice(string.ascii_uppercase+string.digits) for _ in range(4)) for _ in range(3))
-    expires=(datetime.now(timezone.utc)+timedelta(days=p["duration_days"])).isoformat()
+    expires=(datetime.now(timezone.utc)+timedelta(days=duration_days)).isoformat()
     db.table("keys").insert({"key":value,"plan_id":plan_id,"expires_at":expires,"active":True}).execute()
     return redirect("/painel")
 
