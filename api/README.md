@@ -19,11 +19,9 @@ Variáveis obrigatórias:
 - DISCORD_CLIENT_ID
 - DISCORD_CLIENT_SECRET
 - DISCORD_REDIRECT_URI=https://shadow-panel-web.onrender.com/auth/discord/callback
-- SECRET_KEY
 
 Opcionais:
-- ADMIN_DISCORD_USER_IDS (IDs de usuário Discord autorizados como administradores, separados por vírgula)
-
+- ADMIN_DISCORD_USER_IDS (IDs de usuário Discord autorizados como administradores, separados por vírgula; inclua o ID da conta proprietária do painel)
 - NIX_ROOMS_URL=https://salas.nixbot.vip/rooms
 - LESTNORT_BASE_URL=https://lestnortff.shardweb.app/api/v1
 - LESTNORT_API_TOKEN (opcional; token pessoal de Minha API no painel Lest Nort)
