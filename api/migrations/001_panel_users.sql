@@ -8,6 +8,7 @@ create table if not exists public.panel_users (
     email text not null,
     password_hash text not null,
     active boolean not null default true,
+    is_admin boolean not null default false,
     created_at timestamptz not null default now()
 );
 
@@ -21,3 +22,8 @@ alter table public.panel_users enable row level security;
 
 -- Não crie policies públicas para esta tabela.
 -- O backend usa a chave service-role e valida a sessão em cada rota.
+
+-- Após o usuário autorizado concluir o cadastro, conceda acesso administrativo:
+-- update public.panel_users set is_admin = true where lower(email) = lower('email-do-dono@exemplo.com');
+-- Além disso, configure ADMIN_EMAILS no Render com esse mesmo endereço.
+-- O painel administrativo exige as duas condições: is_admin=true e e-mail na allowlist.
