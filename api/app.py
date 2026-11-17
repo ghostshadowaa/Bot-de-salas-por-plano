@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 import requests
 from flask import Flask, jsonify, redirect, render_template_string, request, session
 from supabase import create_client
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-render")
@@ -27,13 +27,7 @@ ASAAS_API_KEY = os.environ.get("ASAAS_API_KEY", "")
 ASAAS_BASE_URL = os.environ.get("ASAAS_BASE_URL", "https://api-sandbox.asaas.com/v3").rstrip("/")
 ASAAS_WEBHOOK_TOKEN = os.environ.get("ASAAS_WEBHOOK_TOKEN", "")
 ASAAS_USER_AGENT = os.environ.get("ASAAS_USER_AGENT", "ShadowAPI/1.0")
-ADMIN_USERNAME = os.environ.get("PANEL_USERNAME", os.environ.get("ADMIN_USERNAME", "Shadow"))
-ADMIN_PASSWORD_HASH = os.environ.get("PANEL_PASSWORD_HASH", os.environ.get("ADMIN_PASSWORD_HASH", ""))
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
-DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")
-DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET", "")
-DISCORD_REDIRECT_URI = os.environ.get("DISCORD_REDIRECT_URI", "")
-ADMIN_DISCORD_USER_IDS = {item.strip() for item in os.environ.get("ADMIN_DISCORD_USER_IDS", "").split(",") if item.strip()}
+ADMIN_EMAILS = {item.strip().lower() for item in os.environ.get("ADMIN_EMAILS", "").split(",") if item.strip()}
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL e SUPABASE_KEY precisam estar configurados.")
@@ -148,18 +142,21 @@ def valid_key(row):
 
 
 def admin():
-    return session.get("admin") is True
+    user = session.get("panel_user") or {}
+    email = str(user.get("email") or "").strip().lower()
+    return bool(session.get("admin") is True and email and email in ADMIN_EMAILS)
 
 
 def discord_user():
-    return session.get("discord_user")
+    # Compatibilidade interna: as rotas existentes usam este objeto de sessão
+    # para identificar o proprietário da carteira e das API Keys.
+    return session.get("panel_user") or session.get("discord_user")
 
 
-
-def discord_account_type(discord_user_id):
-    if discord_user_id and str(discord_user_id) in ADMIN_DISCORD_USER_IDS:
-        return "admin"
-    return "user"
+def discord_account_type(user_id=None):
+    user = session.get("panel_user") or {}
+    email = str(user.get("email") or "").strip().lower()
+    return "admin" if email and email in ADMIN_EMAILS else "user"
 
 def create_key(label, days, owner=None, max_rooms=None, rate_limit=30):
     raw = make_key()
@@ -466,18 +463,28 @@ LOGIN_HTML = """
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shadow API • Login</title>
+<title>Shadow API • Acesso</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#08060d;color:#f5f3ff;font-family:Inter,system-ui,Arial}
 .card{width:min(420px,92vw);background:#110d1b;border:1px solid #30243e;border-radius:20px;padding:28px;box-shadow:0 20px 60px #0008}
 h1{margin:0 0 6px}.muted{color:#a49caf}input,button{width:100%;padding:12px;border-radius:10px;margin-top:10px;background:#0b0710;color:#fff;border:1px solid #3b2d49}button{background:#7c3aed;border:0;font-weight:800;cursor:pointer}.err{color:#ff8c9c;margin-top:12px}
 </style></head><body><div class="card"><h1>🟣 Shadow API</h1><p class="muted">Painel administrativo da API</p>
-<form method="post"><input name="username" placeholder="Usuário" required><input name="password" type="password" placeholder="Senha" required><button>Entrar</button></form>
+<form method="post" action="/login"><input name="identifier" placeholder="Usuário ou e-mail" required autocomplete="username"><input name="password" type="password" placeholder="Senha" required autocomplete="current-password"><button>Entrar</button></form>
+<p class="muted" style="margin-top:16px">Ainda não tem conta? <a href="/register" style="color:#c4b5fd">Criar conta</a></p>
 {% if error %}<div class="err">{{error}}</div>{% endif %}</div><script>
 function copyPix(id,btn){const el=document.getElementById(id);if(!el)return;const done=()=>{const old=btn.textContent;btn.textContent="✅ Pix copiado!";setTimeout(()=>btn.textContent=old,1800)};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(el.value).then(done).catch(()=>fallbackCopy(el,done))}else fallbackCopy(el,done)}
 function fallbackCopy(el,done){el.focus();el.select();document.execCommand("copy");done()}
 </script></body></html>
 """
+
+REGISTER_HTML = """
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shadow API • Criar conta</title>
+<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#08060d;color:#f5f3ff;font-family:Inter,system-ui,Arial}.card{width:min(420px,92vw);background:#110d1b;border:1px solid #30243e;border-radius:20px;padding:28px;box-shadow:0 20px 60px #0008}h1{margin:0 0 6px}.muted{color:#a49caf}input,button{width:100%;padding:12px;border-radius:10px;margin-top:10px;background:#0b0710;color:#fff;border:1px solid #3b2d49}button{background:#7c3aed;border:0;font-weight:800;cursor:pointer}.err{color:#ff8c9c;margin-top:12px}a{color:#c4b5fd}</style></head><body><div class="card"><h1>🟣 Criar conta</h1><p class="muted">Cadastre-se para acessar o Shadow Panel.</p>
+<form method="post" action="/register"><input name="username" placeholder="Nome de usuário" minlength="3" maxlength="32" required autocomplete="username"><input name="email" type="email" placeholder="E-mail" required autocomplete="email"><input name="password" type="password" placeholder="Senha (mínimo 8 caracteres)" minlength="8" required autocomplete="new-password"><button type="submit">Criar conta</button></form>
+<p class="muted">Já possui conta? <a href="/login">Entrar</a></p>{% if error %}<div class="err">{{error}}</div>{% endif %}</div></body></html>
+"""
+
 
 DASHBOARD_HTML = """
 <!doctype html>
@@ -570,8 +577,8 @@ HOME_HTML = """
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shadow API</title><style>
 *{box-sizing:border-box}body{margin:0;background:#070b16;color:#e8eefc;font-family:Inter,system-ui,Arial}.wrap{max-width:1100px;margin:auto;padding:28px}.nav{display:flex;justify-content:space-between;align-items:center;padding:14px 0}.logo{font-weight:900;font-size:22px}.btn{display:inline-block;padding:11px 16px;border-radius:12px;text-decoration:none;color:#fff;background:linear-gradient(135deg,#7c3aed,#4f46e5);font-weight:800}.ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.hero{padding:70px 0 40px;max-width:780px}.badge{display:inline-block;padding:7px 11px;border-radius:999px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.3);color:#c4b5fd;font-size:13px}.hero h1{font-size:clamp(38px,7vw,70px);line-height:1.02;margin:18px 0}.muted{color:#94a3b8;line-height:1.65}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:35px}.card{padding:22px;border:1px solid rgba(148,163,184,.15);border-radius:18px;background:#0d1426}.card h3{margin-top:0}.code{margin-top:10px;padding:12px;border-radius:10px;background:#080c16;color:#c4b5fd;overflow:auto}.footer{margin-top:45px;padding:22px 0;border-top:1px solid rgba(148,163,184,.12);color:#64748b}@media(max-width:750px){.grid{grid-template-columns:1fr}.hero{padding-top:45px}}</style></head>
-<body><div class="wrap"><nav class="nav"><div class="logo">🟣 Shadow API</div><div class="actions"><a class="btn ghost" href="/docs">Documentação</a><a class="btn ghost" href="https://discord.gg/TfkNz4tmzJ" target="_blank" rel="noopener">Discord</a><a class="btn" href="/login">Dashboard</a></div></nav>
-<section class="hero"><span class="badge">API para criação de salas</span><h1>Uma prévia do seu painel Shadow.</h1><p class="muted">Depois do login você terá acesso ao Dashboard, gerenciamento de API Keys, criação de salas, saldo, histórico de requisições, webhook e documentação completa da integração.</p><div class="actions"><a class="btn" href="/login">Entrar com Discord</a><a class="btn ghost" href="/docs">Ver documentação</a><a class="btn ghost" href="https://discord.gg/TfkNz4tmzJ" target="_blank" rel="noopener">Entrar no servidor Discord ↗</a></div></section>
+<body><div class="wrap"><nav class="nav"><div class="logo">🟣 Shadow API</div><div class="actions"><a class="btn ghost" href="/docs">Documentação</a><a class="btn ghost" href="https://discord.gg/TfkNz4tmzJ" target="_blank" rel="noopener">Discord</a><a class="btn" href="/login">Entrar</a></div></nav>
+<section class="hero"><span class="badge">API para criação de salas</span><h1>Uma prévia do seu painel Shadow.</h1><p class="muted">Depois do login você terá acesso ao Dashboard, gerenciamento de API Keys, criação de salas, saldo, histórico de requisições, webhook e documentação completa da integração.</p><div class="actions"><a class="btn" href="/login">Entrar ou criar conta</a><a class="btn ghost" href="/docs">Ver documentação</a><a class="btn ghost" href="https://discord.gg/TfkNz4tmzJ" target="_blank" rel="noopener">Entrar no servidor Discord ↗</a></div></section>
 <section class="grid"><div class="card"><h3>🔑 API Keys</h3><p class="muted">Crie e gerencie chaves para integrar seu sistema à Shadow API.</p></div><div class="card"><h3>🎮 Salas</h3><p class="muted">Envie requisições para criar salas sem expor o token privado do provedor.</p></div><div class="card"><h3>💰 Saldo</h3><p class="muted">Acompanhe o saldo disponível e o consumo por criação de sala.</p></div><div class="card"><h3>📡 Webhook</h3><p class="muted">Receba eventos do seu sistema de vendas e acompanhe as entregas no painel.</p></div><div class="card"><h3>📚 Documentação</h3><p class="muted">Exemplos de integração com cURL, Python, autenticação e respostas HTTP.</p></div><div class="card"><h3>🛡️ Segurança</h3><p class="muted">API Keys ficam protegidas por hash e o token do provedor permanece somente no servidor.</p></div></section>
 <div class="footer">Shadow API • Acesse o Dashboard usando sua conta do Discord.</div></div></body></html>
 """
@@ -892,116 +899,111 @@ def admin_create_room():
     return redirect("/admin#rooms")
 
 
+def render_auth(error=None, status=200):
+    return render_template_string(LOGIN_HTML, error=error), status
+
+
 @app.get("/login")
 def login():
-    current_user = discord_user()
-    if current_user:
-        if discord_account_type(current_user.get("id")) == "admin":
-            session["admin"] = True
-            return redirect("/admin")
-        return redirect("/dashboard")
-    if admin():
+    user = discord_user()
+    if user:
+        return redirect("/admin" if admin() else "/dashboard")
+    return render_auth(request.args.get("error"))
+
+
+@app.post("/login")
+def login_post():
+    identifier = request.form.get("identifier", "").strip().lower()
+    password = request.form.get("password", "")
+    if not identifier or not password:
+        return render_auth("Informe usuário/e-mail e senha.", 400)
+    try:
+        query = db.table("panel_users").select("*").or_(
+            f"email.eq.{identifier},username.eq.{identifier}"
+        ).limit(1).execute()
+        user = (query.data or [None])[0]
+    except Exception:
+        app.logger.exception("Falha ao consultar conta do painel.")
+        return render_template_string(LOGIN_HTML, error="Não foi possível validar o login. Tente novamente."), 503
+    if not user or not user.get("active", True) or not check_password_hash(user.get("password_hash", ""), password):
+        return render_template_string(LOGIN_HTML, error="Usuário/e-mail ou senha inválidos."), 401
+
+    session.clear()
+    session.permanent = True
+    session["panel_user"] = {
+        "id": str(user["id"]),
+        "username": user["username"],
+        "email": user["email"],
+    }
+    session["login_at"] = iso(now())
+    if user["email"].lower() in ADMIN_EMAILS:
+        session["admin"] = True
         return redirect("/admin")
-    if not (DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET and DISCORD_REDIRECT_URI):
-        return render_template_string(LOGIN_HTML, error="Login com Discord ainda não foi configurado no servidor."), 503
-    params = urllib.parse.urlencode({
-        "client_id": DISCORD_CLIENT_ID,
-        "redirect_uri": DISCORD_REDIRECT_URI,
-        "response_type": "code",
-        "scope": "identify",
-    })
-    session["oauth_state"] = secrets.token_urlsafe(24)
-    params += "&state=" + urllib.parse.quote(session["oauth_state"])
-    return redirect("https://discord.com/oauth2/authorize?" + params)
+    return redirect("/dashboard")
+
+
+@app.get("/register")
+def register():
+    if discord_user():
+        return redirect("/admin" if admin() else "/dashboard")
+    return render_auth(request.args.get("error"))
+
+
+@app.post("/register")
+def register_post():
+    username = request.form.get("username", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+    if len(username) < 3 or len(username) > 32 or not username.replace("_", "").isalnum():
+        return render_template_string(REGISTER_HTML, error="Usuário deve ter de 3 a 32 caracteres (letras, números e _)."), 400
+    if len(email) > 254 or "@" not in email or "." not in email.rsplit("@", 1)[-1]:
+        return render_template_string(REGISTER_HTML, error="Informe um e-mail válido."), 400
+    if len(password) < 8:
+        return render_template_string(REGISTER_HTML, error="A senha precisa ter pelo menos 8 caracteres."), 400
+    try:
+        existing = db.table("panel_users").select("id").or_(
+            f"email.eq.{email},username.eq.{username}"
+        ).limit(1).execute().data or []
+        if existing:
+            return render_template_string(REGISTER_HTML, error="Esse usuário ou e-mail já está cadastrado."), 409
+        created = db.table("panel_users").insert({
+            "username": username,
+            "email": email,
+            "password_hash": generate_password_hash(password),
+            "active": True,
+        }).execute()
+        user = (created.data or [None])[0]
+        if not user:
+            raise RuntimeError("Cadastro não retornou o usuário criado.")
+    except Exception:
+        app.logger.exception("Falha ao criar conta do painel.")
+        return render_template_string(REGISTER_HTML, error="Não foi possível criar a conta. Confira a configuração do banco."), 503
+
+    session.clear()
+    session.permanent = True
+    session["panel_user"] = {"id": str(user["id"]), "username": username, "email": email}
+    session["login_at"] = iso(now())
+    if email in ADMIN_EMAILS:
+        session["admin"] = True
+        return redirect("/admin")
+    return redirect("/dashboard")
 
 
 @app.get("/auth/discord/callback")
 def discord_callback():
-    if request.args.get("error"):
-        return render_template_string(
-            LOGIN_HTML,
-            error="O Discord não autorizou o acesso. Volte ao painel e tente novamente."
-        ), 401
-
-    expected_state = session.pop("oauth_state", None)
-    received_state = request.args.get("state")
-    if not expected_state or not received_state or not secrets.compare_digest(received_state, expected_state):
-        return render_template_string(
-            LOGIN_HTML,
-            error="A sessão de login expirou ou foi perdida. Volte ao painel e tente entrar novamente."
-        ), 400
-
-    code = request.args.get("code", "")
-    if not code:
-        return render_template_string(LOGIN_HTML, error="Autorização do Discord não concluída."), 400
-    try:
-        token = requests.post("https://discord.com/api/oauth2/token", data={
-            "client_id": DISCORD_CLIENT_ID,
-            "client_secret": DISCORD_CLIENT_SECRET,
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": DISCORD_REDIRECT_URI,
-        }, timeout=15)
-        token.raise_for_status()
-        access_token = token.json().get("access_token")
-        if not access_token:
-            raise ValueError("Discord não retornou access_token.")
-
-        user = requests.get("https://discord.com/api/v10/users/@me", headers={
-            "Authorization": f"Bearer {access_token}"
-        }, timeout=15)
-        user.raise_for_status()
-        user_data = user.json()
-        discord_id = str(user_data.get("id") or "")
-        if not discord_id:
-            raise ValueError("Discord não retornou ID.")
-
-        session.clear()
-        session.permanent = True
-        session["discord_user"] = user_data
-        session["discord_role"] = discord_account_type(discord_id)
-        session["login_at"] = iso(now())
-        if session["discord_role"] == "admin":
-            session["admin"] = True
-            return redirect("/admin")
-        return redirect("/dashboard")
-    except (requests.RequestException, KeyError, ValueError):
-        app.logger.warning("Falha no callback OAuth do Discord.")
-        return render_template_string(
-            LOGIN_HTML,
-            error="Não foi possível concluir o login. Confira se a URL de retorno do Discord está igual à configurada no Render."
-        ), 502
+    return redirect("/login?error=Login+com+Discord+desativado.+Use+e-mail+e+senha.")
 
 
 @app.get("/admin/login")
 def admin_login():
-    current_user = discord_user()
-    if current_user and discord_account_type(current_user.get("id")) == "admin":
-        session["admin"] = True
-        return redirect("/admin")
     if admin():
         return redirect("/admin")
-    return render_template_string(LOGIN_HTML, error=request.args.get("error"))
+    return redirect("/login")
+
 
 @app.post("/admin/login")
-def login_post():
-    username = request.form.get("username", "")
-    password = request.form.get("password", "")
-    valid_password = False
-
-    if ADMIN_PASSWORD_HASH:
-        valid_password = check_password_hash(ADMIN_PASSWORD_HASH, password)
-    elif ADMIN_PASSWORD:
-        valid_password = secrets.compare_digest(password, ADMIN_PASSWORD)
-
-    if username == ADMIN_USERNAME and valid_password:
-        session.clear()
-        session.permanent = True
-        session["admin"] = True
-        session["login_at"] = iso(now())
-        return redirect("/admin")
-
-    return render_template_string(LOGIN_HTML, error="Usuário ou senha inválidos."), 401
+def legacy_admin_login_post():
+    return redirect("/login")
 
 
 @app.get("/logout")
