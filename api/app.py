@@ -918,10 +918,11 @@ def login_post():
     if not identifier or not password:
         return render_auth("Informe usuário/e-mail e senha.", 400)
     try:
-        query = db.table("panel_users").select("*").or_(
-            f"email.eq.{identifier},username.eq.{identifier}"
-        ).limit(1).execute()
+        query = db.table("panel_users").select("*").eq("email", identifier).limit(1).execute()
         user = (query.data or [None])[0]
+        if not user:
+            query = db.table("panel_users").select("*").eq("username", identifier).limit(1).execute()
+            user = (query.data or [None])[0]
     except Exception:
         app.logger.exception("Falha ao consultar conta do painel.")
         return render_template_string(LOGIN_HTML, error="Não foi possível validar o login. Tente novamente."), 503
@@ -946,7 +947,7 @@ def login_post():
 def register():
     if discord_user():
         return redirect("/admin" if admin() else "/dashboard")
-    return render_auth(request.args.get("error"))
+    return render_template_string(REGISTER_HTML, error=request.args.get("error"))
 
 
 @app.post("/register")
@@ -961,10 +962,9 @@ def register_post():
     if len(password) < 8:
         return render_template_string(REGISTER_HTML, error="A senha precisa ter pelo menos 8 caracteres."), 400
     try:
-        existing = db.table("panel_users").select("id").or_(
-            f"email.eq.{email},username.eq.{username}"
-        ).limit(1).execute().data or []
-        if existing:
+        email_exists = db.table("panel_users").select("id").eq("email", email).limit(1).execute().data or []
+        username_exists = db.table("panel_users").select("id").eq("username", username).limit(1).execute().data or []
+        if email_exists or username_exists:
             return render_template_string(REGISTER_HTML, error="Esse usuário ou e-mail já está cadastrado."), 409
         created = db.table("panel_users").insert({
             "username": username,
