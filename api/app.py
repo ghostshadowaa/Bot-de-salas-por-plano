@@ -102,6 +102,8 @@ def create_room_upstream(payload):
             data = upstream.json()
         except ValueError:
             data = {"raw": upstream.text[:4000]}
+        if not isinstance(data, dict):
+            data = {"data": data}
 
         if 200 <= upstream.status_code < 300:
             return provider, upstream.status_code, data
@@ -109,8 +111,11 @@ def create_room_upstream(payload):
         last_provider, last_status, last_data = provider, upstream.status_code, data
         if index == len(providers) - 1:
             break
-        # Só tenta o segundo provedor após receber erro HTTP definitivo.
-        # Não faz retry no mesmo provedor nem ignora Retry-After.
+        # Em 5xx a criação pode ter sido aceita antes da falha de resposta.
+        # Não troca de provedor nesses casos para evitar salas duplicadas.
+        if upstream.status_code >= 500:
+            break
+        # Em 4xx (incluindo 429), usa o outro provedor sem repetir a chamada.
     return last_provider, last_status, last_data
 
 
@@ -773,7 +778,8 @@ def health():
         "ok": True,
         "service": "shadow-api",
         "supabase": "configured",
-        "provider": "configured" if NIX_API_TOKEN else "missing",
+        "provider": "configured" if (NIX_API_TOKEN or LESTNORT_API_TOKEN) else "missing",
+        "providers": {"nix": bool(NIX_API_TOKEN), "lest_nort": bool(LESTNORT_API_TOKEN)},
     })
 
 
