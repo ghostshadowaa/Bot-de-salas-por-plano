@@ -41,28 +41,31 @@ Modos AP reconhecidos no roteamento: `ap_padrao`, `gelo_inf`, `tatico`, `ap_full
 
 ## 3. Comparação dos campos de criação
 
-As duas integrações usam a operação de criação `POST /rooms` nas respectivas APIs externas. Na interface pública da Shadow, o cliente não chama essas rotas externas: envia o JSON para `POST /v1/rooms`.
+As duas APIs externas recebem criação de sala por `POST /rooms`. Na interface pública da Shadow, o cliente não chama essas rotas externas: envia o JSON para `POST /v1/rooms`. O backend encaminha o JSON sem renomear os campos.
 
-| Campo | Uso | Observação |
-| --- | --- | --- |
-| `config_type` | Seleciona o modo | Ex.: `ap_padrao`, `gelo_inf`, `br_padrao` |
-| `password` | Senha da sala | Campo obrigatório no contrato de criação da Nix |
-| `start_delay_minutes` | Tempo até o início automático | Nix: AP/custom de 1 a 10; BR de 1 a 20 |
-| `room_name` | Nome personalizado | Opcional |
-| `map_name` | Mapa | Opções dependem do modo |
-| `carregamento` | Ativa carregamento | Opção de modos AP/custom; não tem efeito no BR |
-| `1500_ouro` | Ativa 1500 de ouro no primeiro round | Opção AP/custom; não tem efeito no BR |
-| `equipe` | Formato de equipe BR | `solo`, `duo` ou `squad` |
-| `espectadores` | Vagas de espectador BR | `30`, `16`, `8`, `6`, `4`, `2` ou `1` |
+| Campo | Nix | Lest Nort / integração Shadow | Uso |
+| --- | --- | --- | --- |
+| `config_type` | Documentado | Usado no roteamento e encaminhado | Seleciona o modo |
+| `password` | Obrigatório na documentação Nix | Encaminhado no JSON recebido | Senha da sala |
+| `start_delay_minutes` | Documentado: AP 1–10; BR 1–20 | Encaminhado no JSON recebido | Tempo até o início automático |
+| `room_name` | Documentado | Encaminhado no JSON recebido | Nome personalizado |
+| `map_name` | Documentado | Encaminhado no JSON recebido | Mapa |
+| `carregamento` | Documentado para AP/custom | Campo previsto na integração Lest Nort | Opção de modos AP/custom |
+| `1500_ouro` | Documentado para AP/custom | Campo previsto na integração Lest Nort | Opção de modos AP/custom |
+| `equipe` | Documentado para BR | Campo previsto na integração Lest Nort | `solo`, `duo` ou `squad` |
+| `espectadores` | Documentado para BR | Campo previsto na integração Lest Nort | `30`, `16`, `8`, `6`, `4`, `2` ou `1` |
 
-O backend encaminha o JSON recebido sem converter nomes de campos. Por isso, envie os campos no formato mostrado nos exemplos e não inclua campos que não se aplicam ao modo escolhido.
+**Importante sobre a comparação:** a documentação pública da Nix detalha os campos acima. Para a Lest Nort, a tabela registra os campos usados/previstos na integração atual da Shadow; não significa que todos os campos opcionais tenham comportamento idêntico nos dois provedores. O backend encaminha o JSON recebido sem conversão e a resposta real do provedor determina se os campos foram aceitos.
 
 ### O que é igual e o que muda
 
-- **Igual na chamada externa:** criação por `POST /rooms`, envio de JSON e uso de `config_type` para indicar o modo.
+- **Igual na chamada do cliente:** sempre `POST /v1/rooms`, JSON no corpo e chave Shadow no header.
+- **Igual na operação externa:** ambas as integrações usam criação por `POST /rooms`.
 - **Muda conforme o modo:** BR usa `equipe` e `espectadores`; AP/custom pode usar `carregamento` e `1500_ouro`.
-- **Muda internamente:** autenticação e URL do provedor são gerenciadas pelo backend. O cliente não recebe nem utiliza os tokens dos provedores.
+- **Muda internamente:** URL e autenticação do provedor são gerenciadas pelo backend. O cliente não recebe nem utiliza os tokens dos provedores.
 - **Roteamento específico da Shadow:** `br_padrao` vai para Lest Nort; AP tenta Nix e pode usar Lest Nort como alternativa em respostas HTTP 4xx.
+
+A API pública da Nix também documenta o modo `br_padrao`. Mesmo assim, a regra atual do backend Shadow direciona esse modo somente para a Lest Nort.
 
 ## 4. Exemplos de requisição pelo endpoint Shadow
 
