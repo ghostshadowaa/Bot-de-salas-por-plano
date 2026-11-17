@@ -532,7 +532,7 @@ Content-Type: application/json</pre></div></div>
 
 <section id="bot" class="section"><div class="panel"><div class="panel-head"><div><h2>Bot</h2><p>Estrutura preparada para integrar os recursos do Bot da Nix ao Shadow Panel.</p></div><span class="tag warn">EM PREPARAÇÃO</span></div><div class="list"><div class="row"><div><b>Visão Geral</b><span>Indicadores e atividade do bot</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Seu Bot</b><span>Gerenciamento e integração</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Configurações</b><span>Preferências do servidor</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Membros</b><span>Dados e gerenciamento</span></div><span class="tag ok">Planejado</span></div></div></div></section>
 
-<section id="rooms" class="section"><div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Criar sala personalizada</h2><p>Crie uma sala diretamente pelo Shadow Panel. A autenticação é feita pela sessão do painel e o token da Nix permanece privado no servidor.</p></div><span class="tag ok">AUTENTICADO</span></div><form class="form" method="post" action="/admin/rooms"><div class="field full"><label>Nome da sala</label><input name="room_name" value="Shadow Salas" maxlength="100" required></div><div class="field"><label>Tipo de configuração</label><select name="config_type"><option value="ap_padrao">AP Padrão</option><option value="gelo_inf">Gelo Infinito</option><option value="tatico">Tático</option><option value="ap_fullcapa">AP Full Capa</option><option value="capa_3">Capa 3</option><option value="ap_uxd">AP UXD</option><option value="ap_7r">AP 7R</option><option value="br_padrao">BR Padrão</option></select></div><div class="field"><label>Senha</label><input name="password" value="00" maxlength="20" required></div><div class="field"><label>Delay inicial (minutos)</label><input name="start_delay_minutes" type="number" min="1" max="20" value="1" required></div><div class="field"><label>Mapa</label><select name="map_name"><option>Bermuda</option><option>Purgatory</option><option>Kalahari</option><option>Nextera</option><option>Nova Terra</option><option>Solara</option></select></div><div class="field full"><button class="btn primary" type="submit">Criar sala</button></div></form>{% if room_result %}<div class="code"><pre>{{room_result|tojson(indent=2)}}</pre></div>{% endif %}</div><div class="panel"><div class="panel-head"><div><h2>Como funciona</h2><p>O navegador nunca recebe os tokens privados dos provedores.</p></div></div><div class="list"><div class="row"><div><b>1. Login</b><span>O acesso exige a autenticação do Shadow Panel.</span></div><span class="tag ok">Auth</span></div><div class="row"><div><b>2. Shadow API</b><span>O painel envia a configuração para o servidor.</span></div><span class="tag ok">Seguro</span></div><div class="row"><div><b>3. Provedor automático</b><span>O servidor seleciona Nix ou Lest Nort conforme o modo e a disponibilidade.</span></div><span class="tag ok">Privado</span></div></div></div></div></section>
+<section id="rooms" class="section"><div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Criar sala personalizada</h2><p>Crie uma sala diretamente pelo Shadow Panel. A autenticação é feita pela sessão do painel e o token da Nix permanece privado no servidor.</p></div><span class="tag ok">AUTENTICADO</span></div><form class="form" method="post" action="/admin/rooms"><div class="field full"><label>Nome da sala</label><input name="room_name" value="Shadow Salas" maxlength="100" required></div><div class="field"><label>Tipo de configuração</label><select name="config_type"><option value="ap_padrao">AP Padrão</option><option value="gelo_inf">Gelo Infinito</option><option value="tatico">Tático</option><option value="ap_fullcapa">AP Full Capa</option><option value="capa_3">Capa 3</option><option value="ap_uxd">AP UXD</option><option value="ap_7r">AP 7R</option><option value="br_padrao">BR Padrão · Lest Nort</option></select></div><div class="field"><label>Equipe BR</label><select name="equipe"><option value="squad">Squad</option><option value="duo">Duo</option><option value="solo">Solo</option></select></div><div class="field"><label>Espectadores BR</label><select name="espectadores"><option value="30">30</option><option value="16">16</option><option value="8">8</option><option value="6">6</option><option value="4">4</option><option value="2">2</option><option value="1">1</option></select></div><div class="field"><label>Senha</label><input name="password" value="00" maxlength="20" required></div><div class="field"><label>Delay inicial (minutos)</label><input name="start_delay_minutes" type="number" min="1" max="20" value="1" required></div><div class="field"><label>Mapa</label><select name="map_name"><option>Bermuda</option><option>Purgatory</option><option>Kalahari</option><option>Nextera</option><option>Nova Terra</option><option>Solara</option></select></div><div class="field full"><button class="btn primary" type="submit">Criar sala</button></div></form>{% if room_result %}<div class="code"><pre>{{room_result|tojson(indent=2)}}</pre></div>{% endif %}</div><div class="panel"><div class="panel-head"><div><h2>Como funciona</h2><p>O navegador nunca recebe os tokens privados dos provedores.</p></div></div><div class="list"><div class="row"><div><b>1. Login</b><span>O acesso exige a autenticação do Shadow Panel.</span></div><span class="tag ok">Auth</span></div><div class="row"><div><b>2. Shadow API</b><span>O painel envia a configuração para o servidor.</span></div><span class="tag ok">Seguro</span></div><div class="row"><div><b>3. Provedor automático</b><span>O servidor seleciona Nix ou Lest Nort conforme o modo e a disponibilidade.</span></div><span class="tag ok">Privado</span></div></div></div></div></section>
 
 <section id="hosting" class="section"><div class="panel"><div class="panel-head"><div><h2>Hospedagem de Bots</h2><p>Este módulo está reservado para uma futura etapa do Shadow Panel.</p></div><span class="tag lock">INDISPONÍVEL 🔒</span></div><div class="list"><div class="row"><div><b>Criar hospedagem</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div><div class="row"><div><b>Seus bots</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div><div class="row"><div><b>Planos</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div></div></div></section>
 
@@ -864,6 +864,15 @@ def admin_create_room():
         "room_name": room_name,
         "map_name": map_name,
     }
+    if config_type == "br_padrao":
+        equipe = request.form.get("equipe", "squad").strip().lower()
+        espectadores = request.form.get("espectadores", "30").strip()
+        if equipe not in {"solo", "duo", "squad"}:
+            equipe = "squad"
+        if espectadores not in {"30", "16", "8", "6", "4", "2", "1"}:
+            espectadores = "30"
+        payload["equipe"] = equipe
+        payload["espectadores"] = int(espectadores)
 
     try:
         provider, status_code, result = create_room_upstream(payload)
@@ -885,7 +894,11 @@ def admin_create_room():
 
 @app.get("/login")
 def login():
-    if discord_user():
+    current_user = discord_user()
+    if current_user:
+        if discord_account_type(current_user.get("id")) == "admin":
+            session["admin"] = True
+            return redirect("/admin")
         return redirect("/dashboard")
     if admin():
         return redirect("/admin")
@@ -904,8 +917,20 @@ def login():
 
 @app.get("/auth/discord/callback")
 def discord_callback():
-    if request.args.get("state") != session.pop("oauth_state", None):
-        return render_template_string(LOGIN_HTML, error="Sessão de autenticação inválida."), 400
+    if request.args.get("error"):
+        return render_template_string(
+            LOGIN_HTML,
+            error="O Discord não autorizou o acesso. Volte ao painel e tente novamente."
+        ), 401
+
+    expected_state = session.pop("oauth_state", None)
+    received_state = request.args.get("state")
+    if not expected_state or not received_state or not secrets.compare_digest(received_state, expected_state):
+        return render_template_string(
+            LOGIN_HTML,
+            error="A sessão de login expirou ou foi perdida. Volte ao painel e tente entrar novamente."
+        ), 400
+
     code = request.args.get("code", "")
     if not code:
         return render_template_string(LOGIN_HTML, error="Autorização do Discord não concluída."), 400
@@ -918,22 +943,42 @@ def discord_callback():
             "redirect_uri": DISCORD_REDIRECT_URI,
         }, timeout=15)
         token.raise_for_status()
-        access_token = token.json()["access_token"]
+        access_token = token.json().get("access_token")
+        if not access_token:
+            raise ValueError("Discord não retornou access_token.")
+
         user = requests.get("https://discord.com/api/v10/users/@me", headers={
             "Authorization": f"Bearer {access_token}"
         }, timeout=15)
         user.raise_for_status()
+        user_data = user.json()
+        discord_id = str(user_data.get("id") or "")
+        if not discord_id:
+            raise ValueError("Discord não retornou ID.")
+
         session.clear()
         session.permanent = True
-        session["discord_user"] = user.json()
+        session["discord_user"] = user_data
+        session["discord_role"] = discord_account_type(discord_id)
         session["login_at"] = iso(now())
+        if session["discord_role"] == "admin":
+            session["admin"] = True
+            return redirect("/admin")
         return redirect("/dashboard")
     except (requests.RequestException, KeyError, ValueError):
-        return render_template_string(LOGIN_HTML, error="Não foi possível concluir o login com Discord."), 502
+        app.logger.warning("Falha no callback OAuth do Discord.")
+        return render_template_string(
+            LOGIN_HTML,
+            error="Não foi possível concluir o login. Confira se a URL de retorno do Discord está igual à configurada no Render."
+        ), 502
 
 
 @app.get("/admin/login")
 def admin_login():
+    current_user = discord_user()
+    if current_user and discord_account_type(current_user.get("id")) == "admin":
+        session["admin"] = True
+        return redirect("/admin")
     if admin():
         return redirect("/admin")
     return render_template_string(LOGIN_HTML, error=request.args.get("error"))
@@ -1077,11 +1122,13 @@ USER_DASHBOARD_HTML = """
 </section>
 
 <section id="rooms" class="panel" style="margin-top:18px">
-<div class="head"><div><h2>Salas</h2><p>Crie uma sala diretamente pelo painel usando uma das suas API Keys. O token privado da Nix permanece somente no servidor.</p></div><span class="tag ok">NIX ONLINE</span></div>
+<div class="head"><div><h2>Salas</h2><p>Crie salas pelo painel. Os tokens privados dos provedores permanecem somente no servidor.</p></div><span class="tag ok">NIX + LEST NORT</span></div>
 {% if not keys %}<div class="empty" style="margin-top:15px">Você ainda não possui uma API Key vinculada à sua conta.</div>{% else %}
 <form class="form" method="post" action="/dashboard/rooms">
-<div class="field"><label>API Key</label><select name="key_id" required>{% for k in keys %}<option value="{{k.id}}" {% if not valid_key(k) %}disabled{% endif %}>{{k.label}} · {{k.key_prefix}}•••• · R$ {{ "%.2f"|format((k.balance_cents or 0)/100) }}{% if not valid_key(k) %} · INATIVA{% endif %}</option>{% endfor %}</select></div>
-<div class="field"><label>Tipo de configuração</label><select name="config_type"><option value="ap_padrao">AP Padrão</option><option value="gelo_inf">Gelo Infinito</option><option value="tatico">Tático</option><option value="ap_fullcapa">AP Full Capa</option><option value="capa_3">Capa 3</option><option value="ap_uxd">AP UXD</option><option value="ap_7r">AP 7R</option><option value="br_padrao">BR Padrão</option></select></div>
+<div class="field"><label>API Key</label><select name="key_id" required>{% for k in keys %}<option value="{{k.id}}" {% if not valid_key(k) %}disabled{% endif %}>{{k.label}} · {{k.key_prefix}}••••{% if not valid_key(k) %} · INATIVA{% endif %}</option>{% endfor %}</select><div class="hint">O custo será descontado da carteira da sua conta Discord. Saldo atual: R$ {{ "%.2f"|format((wallet.balance_cents or 0)/100) }}.</div></div>
+<div class="field"><label>Tipo de configuração</label><select name="config_type"><option value="ap_padrao">AP Padrão</option><option value="gelo_inf">Gelo Infinito</option><option value="tatico">Tático</option><option value="ap_fullcapa">AP Full Capa</option><option value="capa_3">Capa 3</option><option value="ap_uxd">AP UXD</option><option value="ap_7r">AP 7R</option><option value="br_padrao">BR Padrão · Lest Nort</option></select></div>
+<div class="field"><label>Equipe BR</label><select name="equipe"><option value="squad">Squad</option><option value="duo">Duo</option><option value="solo">Solo</option></select><div class="hint">Usado somente no modo BR.</div></div>
+<div class="field"><label>Espectadores BR</label><select name="espectadores"><option value="30">30</option><option value="16">16</option><option value="8">8</option><option value="6">6</option><option value="4">4</option><option value="2">2</option><option value="1">1</option></select><div class="hint">Usado somente no modo BR.</div></div>
 <div class="field"><label>Senha da sala</label><input name="password" value="00" maxlength="20"></div>
 <div class="field"><label>Delay inicial (minutos)</label><input name="start_delay_minutes" type="number" min="1" max="20" value="1" required></div>
 <div class="field"><label>Mapa</label><select name="map_name"><option>Bermuda</option><option>Purgatory</option><option>Kalahari</option><option>Nextera</option><option>Nova Terra</option><option>Solara</option></select></div>
@@ -1094,10 +1141,10 @@ USER_DASHBOARD_HTML = """
 
 <div class="grid two">
 <section class="panel" id="keys"><div class="head"><div><h2>Minhas API Keys</h2><p>Somente chaves vinculadas ao seu Discord aparecem aqui.</p></div><span class="tag warn">{{ keys|length }} cadastradas</span></div>
-{% if keys %}<div class="list">{% for k in keys %}<div class="row"><div><b>{{k.label}}</b><span>{{k.key_prefix}}•••• · Saldo R$ {{ "%.2f"|format((k.balance_cents or 0)/100) }}</span><span>Salas: {{k.rooms_used or 0}}{% if k.max_rooms %} / {{k.max_rooms}}{% else %} / ilimitado{% endif %} · Expira: {{k.expires_at or "sem expiração"}}</span></div>{% if valid_key(k) %}<span class="tag ok">ATIVA</span>{% else %}<span class="tag lock">INATIVA</span>{% endif %}</div>{% endfor %}</div>{% else %}<div class="empty">Nenhuma API Key vinculada à sua conta ainda.</div>{% endif %}
+{% if keys %}<div class="list">{% for k in keys %}<div class="row"><div><b>{{k.label}}</b><span>{{k.key_prefix}}•••• · utiliza a carteira da conta</span><span>Salas: {{k.rooms_used or 0}}{% if k.max_rooms %} / {{k.max_rooms}}{% else %} / ilimitado{% endif %} · Expira: {{k.expires_at or "sem expiração"}}</span></div>{% if valid_key(k) %}<span class="tag ok">ATIVA</span>{% else %}<span class="tag lock">INATIVA</span>{% endif %}</div>{% endfor %}</div>{% else %}<div class="empty">Nenhuma API Key vinculada à sua conta ainda.</div>{% endif %}
 </section>
 <section class="panel" id="usage"><div class="head"><div><h2>Uso da API</h2><p>Resumo do consumo das suas credenciais.</p></div><span class="tag ok">R$ 0,05 / sala</span></div>
-<div class="list"><div class="row"><div><b>Salas criadas</b><span>Total entre suas chaves</span></div><b>{{rooms_used}}</b></div><div class="row"><div><b>Saldo disponível</b><span>Total das suas chaves</span></div><b>R$ {{ "%.2f"|format((keys|sum(attribute="balance_cents") or 0)/100) }}</b></div><div class="row"><div><b>Endpoint</b><span>POST /v1/rooms</span></div><span class="tag ok">ONLINE</span></div></div>
+<div class="list"><div class="row"><div><b>Salas criadas</b><span>Total entre suas chaves</span></div><b>{{rooms_used}}</b></div><div class="row"><div><b>Saldo disponível</b><span>Carteira da sua conta Discord</span></div><b>R$ {{ "%.2f"|format((wallet.balance_cents or 0)/100) }}</b></div><div class="row"><div><b>Endpoint</b><span>POST /v1/rooms</span></div><span class="tag ok">ONLINE</span></div></div>
 <div class="code"><pre>X-API-Key: sk_sua_chave
 Content-Type: application/json
 
@@ -1135,7 +1182,7 @@ def user_create_room():
         session["room_result"] = {"ok": False, "status": 403, "error": "API Key inválida, expirada ou inativa."}
         return redirect("/dashboard#rooms")
 
-    if not reserve_room_credit(key["id"]):
+    if not reserve_room_credit(key["id"], discord_id):
         session["room_result"] = {"ok": False, "status": 402, "error": "Saldo insuficiente. Adicione crédito antes de criar a sala."}
         return redirect("/dashboard#rooms")
 
@@ -1144,13 +1191,23 @@ def user_create_room():
     except ValueError:
         delay = 1
 
+    config_type = request.form.get("config_type", "ap_padrao").strip() or "ap_padrao"
     payload = {
         "password": request.form.get("password", "00").strip() or "00",
         "start_delay_minutes": delay,
-        "config_type": request.form.get("config_type", "ap_padrao").strip() or "ap_padrao",
+        "config_type": config_type,
         "room_name": request.form.get("room_name", "Shadow Salas").strip() or "Shadow Salas",
         "map_name": request.form.get("map_name", "Bermuda").strip() or "Bermuda",
     }
+    if config_type == "br_padrao":
+        equipe = request.form.get("equipe", "squad").strip().lower()
+        espectadores = request.form.get("espectadores", "30").strip()
+        if equipe not in {"solo", "duo", "squad"}:
+            equipe = "squad"
+        if espectadores not in {"30", "16", "8", "6", "4", "2", "1"}:
+            espectadores = "30"
+        payload["equipe"] = equipe
+        payload["espectadores"] = int(espectadores)
 
     try:
         provider, status_code, response = create_room_upstream(payload)
@@ -1161,7 +1218,7 @@ def user_create_room():
                 "last_used_at": iso(now()),
             }).eq("id", key["id"]).execute()
         else:
-            refund_room_credit(key["id"])
+            refund_room_credit(key["id"], discord_id)
 
         session["room_result"] = {
             "ok": 200 <= status_code < 300,
@@ -1170,7 +1227,7 @@ def user_create_room():
             "response": response,
         }
     except Exception:
-        refund_room_credit(key["id"])
+        refund_room_credit(key["id"], discord_id)
         session["room_result"] = {
             "ok": False,
             "status": 502,
