@@ -41,6 +41,79 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 db = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+# Provedores de salas: Nix continua como primeira opção para AP; Lest Nort
+# atende BR e funciona como alternativa quando a resposta HTTP da Nix falha.
+LESTNORT_API_TOKEN = os.environ.get("LESTNORT_API_TOKEN", "").strip()
+LESTNORT_BASE_URL = os.environ.get(
+    "LESTNORT_BASE_URL", "https://lestnortff.shardweb.app/api/v1"
+).rstrip("/")
+LESTNORT_MODES = {
+    "ap_padrao", "gelo_inf", "tatico", "ap_fullcapa",
+    "capa_3", "ap_uxd", "ap_7r", "br_padrao",
+}
+
+
+def create_room_upstream(payload):
+    """Retorna (provider, status_code, response_dict).
+
+    Não repete POST após timeout: sem suporte a idempotência, repetir poderia
+    criar duas salas. O fallback ocorre apenas após receber uma resposta HTTP.
+    """
+    mode = str(payload.get("config_type") or "ap_padrao")
+    providers = []
+
+    if LESTNORT_API_TOKEN and mode == "br_padrao":
+        providers.append(("Lest Nort", f"{LESTNORT_BASE_URL}/rooms", LESTNORT_API_TOKEN))
+
+    if NIX_API_TOKEN and mode != "br_padrao":
+        providers.append(("Nix", NIX_ROOMS_URL, NIX_API_TOKEN))
+
+    if LESTNORT_API_TOKEN and mode in LESTNORT_MODES and mode != "br_padrao":
+        providers.append(("Lest Nort", f"{LESTNORT_BASE_URL}/rooms", LESTNORT_API_TOKEN))
+
+    if not providers and LESTNORT_API_TOKEN and mode in LESTNORT_MODES:
+        providers.append(("Lest Nort", f"{LESTNORT_BASE_URL}/rooms", LESTNORT_API_TOKEN))
+
+    if not providers:
+        return None, 503, {
+            "error": "Nenhum provedor configurado para este modo.",
+            "mode": mode,
+        }
+
+    last_provider, last_status, last_data = None, 503, {}
+    for index, (provider, url, token) in enumerate(providers):
+        try:
+            upstream = requests.post(
+                url,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                timeout=20,
+            )
+        except requests.RequestException:
+            # Timeout/conexão interrompida é ambíguo: não arriscar duplicar sala.
+            return provider, 502, {
+                "error": f"Falha de conexão com {provider}; criação não repetida para evitar duplicidade."
+            }
+
+        try:
+            data = upstream.json()
+        except ValueError:
+            data = {"raw": upstream.text[:4000]}
+
+        if 200 <= upstream.status_code < 300:
+            return provider, upstream.status_code, data
+
+        last_provider, last_status, last_data = provider, upstream.status_code, data
+        if index == len(providers) - 1:
+            break
+        # Só tenta o segundo provedor após receber erro HTTP definitivo.
+        # Não faz retry no mesmo provedor nem ignora Retry-After.
+    return last_provider, last_status, last_data
+
+
 def now():
     return datetime.now(timezone.utc)
 
@@ -454,7 +527,7 @@ Content-Type: application/json</pre></div></div>
 
 <section id="bot" class="section"><div class="panel"><div class="panel-head"><div><h2>Bot</h2><p>Estrutura preparada para integrar os recursos do Bot da Nix ao Shadow Panel.</p></div><span class="tag warn">EM PREPARAÇÃO</span></div><div class="list"><div class="row"><div><b>Visão Geral</b><span>Indicadores e atividade do bot</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Seu Bot</b><span>Gerenciamento e integração</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Configurações</b><span>Preferências do servidor</span></div><span class="tag ok">Planejado</span></div><div class="row"><div><b>Membros</b><span>Dados e gerenciamento</span></div><span class="tag ok">Planejado</span></div></div></div></section>
 
-<section id="rooms" class="section"><div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Criar sala personalizada</h2><p>Crie uma sala diretamente pelo Shadow Panel. A autenticação é feita pela sessão do painel e o token da Nix permanece privado no servidor.</p></div><span class="tag ok">AUTENTICADO</span></div><form class="form" method="post" action="/admin/rooms"><div class="field full"><label>Nome da sala</label><input name="room_name" value="Shadow Salas" maxlength="100" required></div><div class="field"><label>Tipo de configuração</label><select name="config_type"><option value="ap_padrao">AP Padrão</option><option value="gelo_inf">Gelo Infinito</option><option value="tatico">Tático</option><option value="ap_fullcapa">AP Full Capa</option><option value="capa_3">Capa 3</option><option value="ap_uxd">AP UXD</option><option value="ap_7r">AP 7R</option><option value="br_padrao">BR Padrão</option></select></div><div class="field"><label>Senha</label><input name="password" value="00" maxlength="20" required></div><div class="field"><label>Delay inicial (minutos)</label><input name="start_delay_minutes" type="number" min="1" max="20" value="1" required></div><div class="field"><label>Mapa</label><select name="map_name"><option>Bermuda</option><option>Purgatory</option><option>Kalahari</option><option>Nextera</option><option>Nova Terra</option><option>Solara</option></select></div><div class="field full"><button class="btn primary" type="submit">Criar sala</button></div></form>{% if room_result %}<div class="code"><pre>{{room_result|tojson(indent=2)}}</pre></div>{% endif %}</div><div class="panel"><div class="panel-head"><div><h2>Como funciona</h2><p>O navegador nunca recebe o token privado da Nix.</p></div></div><div class="list"><div class="row"><div><b>1. Login</b><span>O acesso exige a autenticação do Shadow Panel.</span></div><span class="tag ok">Auth</span></div><div class="row"><div><b>2. Shadow API</b><span>O painel envia a configuração para o servidor.</span></div><span class="tag ok">Seguro</span></div><div class="row"><div><b>3. Nix API</b><span>O servidor chama POST /rooms usando NIX_API_TOKEN.</span></div><span class="tag ok">Privado</span></div></div></div></div></section>
+<section id="rooms" class="section"><div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Criar sala personalizada</h2><p>Crie uma sala diretamente pelo Shadow Panel. A autenticação é feita pela sessão do painel e o token da Nix permanece privado no servidor.</p></div><span class="tag ok">AUTENTICADO</span></div><form class="form" method="post" action="/admin/rooms"><div class="field full"><label>Nome da sala</label><input name="room_name" value="Shadow Salas" maxlength="100" required></div><div class="field"><label>Tipo de configuração</label><select name="config_type"><option value="ap_padrao">AP Padrão</option><option value="gelo_inf">Gelo Infinito</option><option value="tatico">Tático</option><option value="ap_fullcapa">AP Full Capa</option><option value="capa_3">Capa 3</option><option value="ap_uxd">AP UXD</option><option value="ap_7r">AP 7R</option><option value="br_padrao">BR Padrão</option></select></div><div class="field"><label>Senha</label><input name="password" value="00" maxlength="20" required></div><div class="field"><label>Delay inicial (minutos)</label><input name="start_delay_minutes" type="number" min="1" max="20" value="1" required></div><div class="field"><label>Mapa</label><select name="map_name"><option>Bermuda</option><option>Purgatory</option><option>Kalahari</option><option>Nextera</option><option>Nova Terra</option><option>Solara</option></select></div><div class="field full"><button class="btn primary" type="submit">Criar sala</button></div></form>{% if room_result %}<div class="code"><pre>{{room_result|tojson(indent=2)}}</pre></div>{% endif %}</div><div class="panel"><div class="panel-head"><div><h2>Como funciona</h2><p>O navegador nunca recebe os tokens privados dos provedores.</p></div></div><div class="list"><div class="row"><div><b>1. Login</b><span>O acesso exige a autenticação do Shadow Panel.</span></div><span class="tag ok">Auth</span></div><div class="row"><div><b>2. Shadow API</b><span>O painel envia a configuração para o servidor.</span></div><span class="tag ok">Seguro</span></div><div class="row"><div><b>3. Provedor automático</b><span>O servidor seleciona Nix ou Lest Nort conforme o modo e a disponibilidade.</span></div><span class="tag ok">Privado</span></div></div></div></div></section>
 
 <section id="hosting" class="section"><div class="panel"><div class="panel-head"><div><h2>Hospedagem de Bots</h2><p>Este módulo está reservado para uma futura etapa do Shadow Panel.</p></div><span class="tag lock">INDISPONÍVEL 🔒</span></div><div class="list"><div class="row"><div><b>Criar hospedagem</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div><div class="row"><div><b>Seus bots</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div><div class="row"><div><b>Planos</b><span>Indisponível</span></div><span class="tag lock">Bloqueado</span></div></div></div></section>
 
@@ -731,10 +804,7 @@ def rooms():
     if not isinstance(payload, dict):
         return jsonify({"error": "O corpo deve ser JSON"}), 400
 
-    # Cada criação de sala custa R$ 0,05.
-    # O valor é reservado antes da chamada para impedir que duas requisições
-    # concorrentes criem salas sem saldo. Se a Nix não criar a sala,
-    # o valor é devolvido automaticamente.
+    # Reserva o crédito Shadow uma única vez, independentemente do provedor usado.
     try:
         if not reserve_room_credit(key["id"], key.get("owner_user_id")):
             response = {
@@ -745,67 +815,23 @@ def rooms():
             log_event(key["id"], "room_request", 402, payload, response)
             return jsonify(response), 402
 
-        # A API Key Shadow nunca é enviada para a Nix.
-        # O cliente fala somente com a Shadow API; a Shadow usa o token
-        # privado do Render para chamar diretamente POST /rooms da Nix.
-        headers = {
-            "Authorization": f"Bearer {NIX_API_TOKEN}",
-            "Content-Type": "application/json",
-        }
+        provider, status_code, response = create_room_upstream(payload)
+        log_event(key["id"], "room_request", status_code, payload, response)
 
-        upstream = None
-        last_error = None
-
-        # Mesmo comportamento do bot original: retry limitado apenas
-        # para erros de servidor/infraestrutura da Nix.
-        for attempt in range(1, 5):
-            try:
-                upstream = requests.post(
-                    NIX_ROOMS_URL,
-                    json=payload,
-                    headers=headers,
-                    timeout=15,
-                )
-
-                if upstream.status_code not in (502, 503, 504, 524):
-                    break
-
-                if attempt < 4:
-                    import time
-                    time.sleep(min(5 * attempt, 20))
-
-            except requests.RequestException as exc:
-                last_error = exc
-                if attempt < 4:
-                    import time
-                    time.sleep(min(5 * attempt, 20))
-
-        if upstream is None:
-            refund_room_credit(key["id"], key.get("owner_user_id"))
-            response = {"error": "Não foi possível conectar à API da Nix"}
-            log_event(key["id"], "room_request", 502, payload, response)
-            return jsonify(response), 502
-
-        try:
-            response = upstream.json()
-        except ValueError:
-            response = {"raw": upstream.text[:4000]}
-
-        log_event(key["id"], "room_request", upstream.status_code, payload, response)
-
-        if 200 <= upstream.status_code < 300:
+        if 200 <= status_code < 300:
             db.table("api_keys").update({
                 "rooms_used": int(key.get("rooms_used") or 0) + 1,
                 "last_used_at": iso(now()),
             }).eq("id", key["id"]).execute()
         else:
-            # A sala não foi criada com sucesso: devolve os R$ 0,05 reservados.
-            refund_room_credit(key["id"])
+            refund_room_credit(key["id"], key.get("owner_user_id"))
 
-        return jsonify(response), upstream.status_code
-    except requests.RequestException:
-        refund_room_credit(key["id"])
-        response = {"error": "Falha ao comunicar com o provedor"}
+        if provider:
+            response = {**response, "provider": provider}
+        return jsonify(response), status_code
+    except Exception:
+        refund_room_credit(key["id"], key.get("owner_user_id"))
+        response = {"error": "Falha interna ao comunicar com os provedores de salas"}
         log_event(key["id"], "room_request", 502, payload, response)
         return jsonify(response), 502
 
@@ -834,29 +860,18 @@ def admin_create_room():
     }
 
     try:
-        upstream = requests.post(
-            NIX_ROOMS_URL,
-            json=payload,
-            headers={
-                "Authorization": f"Bearer {NIX_API_TOKEN}",
-                "Content-Type": "application/json",
-            },
-            timeout=15,
-        )
-        try:
-            result = upstream.json()
-        except ValueError:
-            result = {"raw": upstream.text[:4000]}
+        provider, status_code, result = create_room_upstream(payload)
         session["room_result"] = {
-            "ok": 200 <= upstream.status_code < 300,
-            "status": upstream.status_code,
+            "ok": 200 <= status_code < 300,
+            "status": status_code,
+            "provider": provider,
             "response": result,
         }
-    except requests.RequestException as exc:
+    except Exception:
         session["room_result"] = {
             "ok": False,
             "status": 502,
-            "error": "Não foi possível conectar à API da Nix",
+            "error": "Falha ao comunicar com os provedores de salas.",
         }
 
     return redirect("/admin#rooms")
@@ -1132,37 +1147,9 @@ def user_create_room():
     }
 
     try:
-        upstream = None
-        for attempt in range(1, 5):
-            try:
-                upstream = requests.post(
-                    NIX_ROOMS_URL,
-                    json=payload,
-                    headers={
-                        "Authorization": f"Bearer {NIX_API_TOKEN}",
-                        "Content-Type": "application/json",
-                    },
-                    timeout=15,
-                )
-                if upstream.status_code not in (502, 503, 504, 524) or attempt == 4:
-                    break
-                import time
-                time.sleep(min(5 * attempt, 20))
-            except requests.RequestException:
-                if attempt == 4:
-                    raise
-                import time
-                time.sleep(min(5 * attempt, 20))
+        provider, status_code, response = create_room_upstream(payload)
 
-        if upstream is None:
-            raise requests.RequestException("no response")
-
-        try:
-            response = upstream.json()
-        except ValueError:
-            response = {"raw": upstream.text[:4000]}
-
-        if 200 <= upstream.status_code < 300:
+        if 200 <= status_code < 300:
             db.table("api_keys").update({
                 "rooms_used": int(key.get("rooms_used") or 0) + 1,
                 "last_used_at": iso(now()),
@@ -1171,13 +1158,18 @@ def user_create_room():
             refund_room_credit(key["id"])
 
         session["room_result"] = {
-            "ok": 200 <= upstream.status_code < 300,
-            "status": upstream.status_code,
+            "ok": 200 <= status_code < 300,
+            "status": status_code,
+            "provider": provider,
             "response": response,
         }
-    except requests.RequestException:
+    except Exception:
         refund_room_credit(key["id"])
-        session["room_result"] = {"ok": False, "status": 502, "error": "Não foi possível conectar à API da Nix."}
+        session["room_result"] = {
+            "ok": False,
+            "status": 502,
+            "error": "Falha ao comunicar com os provedores de salas.",
+        }
 
     return redirect("/dashboard#rooms")
 @app.post("/dashboard/deposit")
