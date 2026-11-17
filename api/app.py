@@ -937,7 +937,7 @@ def login_post():
         "email": user["email"],
     }
     session["login_at"] = iso(now())
-    if user["email"].lower() in ADMIN_EMAILS:
+    if user.get("is_admin") is True and user["email"].lower() in ADMIN_EMAILS:
         session["admin"] = True
         return redirect("/admin")
     return redirect("/dashboard")
@@ -983,7 +983,7 @@ def register_post():
     session.permanent = True
     session["panel_user"] = {"id": str(user["id"]), "username": username, "email": email}
     session["login_at"] = iso(now())
-    if email in ADMIN_EMAILS:
+    if user.get("is_admin") is True and email in ADMIN_EMAILS:
         session["admin"] = True
         return redirect("/admin")
     return redirect("/dashboard")
